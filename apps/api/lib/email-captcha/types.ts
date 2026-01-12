@@ -1,3 +1,10 @@
+export interface QueueConfig {
+  concurrency?: number;
+  attempts?: number;
+  backoff?: 'exponential' | 'fixed';
+  backoffDelay?: number;
+}
+
 export interface EmailCaptchaConfig {
   secret: string;
   storage: {
@@ -6,6 +13,14 @@ export interface EmailCaptchaConfig {
     del(key: string): Promise<void>;
   };
   codeLength: number;
+  ttl: number;
+  queueConfig?: QueueConfig;
+}
+
+export interface EmailCaptchaJobData {
+  email: string;
+  code: string;
+  purpose: string;
   ttl: number;
 }
 

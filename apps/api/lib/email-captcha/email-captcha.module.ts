@@ -1,7 +1,9 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { MailConfig, MailModule, MailService } from '../mail';
+import { QueueModule, QueueService } from '../queue';
+import { EMAIL_CAPTCHA_QUEUE_NAME, EmailCaptchaProcessor } from './email-captcha.processor';
 import { EmailCaptchaService } from './email-captcha.service';
-import { EmailCaptchaConfig } from './types';
+import { EmailCaptchaConfig, QueueConfig } from './types';
 
 export interface EmailCaptchaModuleOptions {
   storage: {
@@ -14,6 +16,8 @@ export interface EmailCaptchaModuleOptions {
   secret?: string;
   enableMail?: boolean;
   mailConfig?: MailConfig;
+  enableQueue?: boolean;
+  queueConfig?: QueueConfig;
 }
 
 @Global()
@@ -25,14 +29,33 @@ export class EmailCaptchaModule {
       codeLength: options.codeLength || 6,
       ttl: options.ttl || 300,
       secret: options.secret || 'default-secret-change-in-production',
+      queueConfig: options.queueConfig,
     };
 
     const imports = [];
+    const providers = [];
+    const injectTokens: any[] = [];
+
+    // 邮件模块
     if (options.enableMail) {
       if (!options.mailConfig) {
         throw new Error('mailConfig must be provided when enableMail is true');
       }
       imports.push(MailModule.forRoot(options.mailConfig));
+      injectTokens.push(MailService);
+    }
+
+    // 队列模块（注册队列和处理器）
+    if (options.enableQueue) {
+      imports.push(
+        QueueModule.registerQueue({ name: EMAIL_CAPTCHA_QUEUE_NAME }),
+        QueueModule.registerProcessor({
+          queueName: EMAIL_CAPTCHA_QUEUE_NAME,
+          processor: EmailCaptchaProcessor,
+          concurrency: options.queueConfig?.concurrency || 5,
+        }),
+      );
+      injectTokens.push(QueueService);
     }
 
     return {
@@ -40,10 +63,24 @@ export class EmailCaptchaModule {
       module: EmailCaptchaModule,
       imports,
       providers: [
+        ...providers,
         {
           provide: EmailCaptchaService,
-          useFactory: (mailService?: any) => new EmailCaptchaService(emailCaptchaConfig, mailService),
-          inject: options.enableMail ? [MailService] : [],
+          useFactory: (...services: any[]) => {
+            let mailService: MailService | undefined;
+            let queueService: QueueService | undefined;
+
+            let idx = 0;
+            if (options.enableMail) {
+              mailService = services[idx++];
+            }
+            if (options.enableQueue) {
+              queueService = services[idx++];
+            }
+
+            return new EmailCaptchaService(emailCaptchaConfig, mailService, queueService);
+          },
+          inject: injectTokens,
         },
       ],
       exports: [EmailCaptchaService],
@@ -53,29 +90,32 @@ export class EmailCaptchaModule {
   static forRootAsync(options: {
     useFactory: (...args: any[]) => Promise<EmailCaptchaModuleOptions> | EmailCaptchaModuleOptions;
     inject?: any[];
+    imports?: any[];
   }): DynamicModule {
     return {
       global: true,
       module: EmailCaptchaModule,
-      imports: [],
+      imports: options.imports || [],
       providers: [
         {
           provide: EmailCaptchaService,
-          useFactory: async (mailService: any, ...args: any[]) => {
+          useFactory: async (mailService: MailService, queueService: QueueService, ...args: any[]) => {
             const emailCaptchaOptions = await options.useFactory(...args);
             const emailCaptchaConfig: EmailCaptchaConfig = {
               storage: emailCaptchaOptions.storage,
               codeLength: emailCaptchaOptions.codeLength || 6,
               ttl: emailCaptchaOptions.ttl || 300,
               secret: emailCaptchaOptions.secret || 'default-secret-change-in-production',
+              queueConfig: emailCaptchaOptions.queueConfig,
             };
 
             return new EmailCaptchaService(
               emailCaptchaConfig,
               emailCaptchaOptions.enableMail !== false ? mailService : undefined,
+              emailCaptchaOptions.enableQueue ? queueService : undefined,
             );
           },
-          inject: [MailService, ...(options.inject || [])],
+          inject: [MailService, QueueService, ...(options.inject || [])],
         },
       ],
       exports: [EmailCaptchaService],

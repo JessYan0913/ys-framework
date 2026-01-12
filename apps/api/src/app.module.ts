@@ -4,6 +4,7 @@ import { RateLimitInterceptor } from '@lib/common';
 import { EmailCaptchaModule } from '@lib/email-captcha';
 import { ImageCaptchaModule, LocalImageLoader } from '@lib/image-captcha';
 import { MailModule } from '@lib/mail';
+import { QueueModule } from '@lib/queue';
 import { StorageModule } from '@lib/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -61,6 +62,12 @@ import { UserService } from './user/user.service';
         url: process.env.REDIS_URL ?? '',
       },
     }),
+    QueueModule.forRoot({
+      connection: {
+        url: process.env.REDIS_URL ?? '',
+      },
+      prefix: process.env.QUEUE_PREFIX || 'ys:queue',
+    }),
     MailModule.forRoot({
       host: process.env.MAIL_HOST || 'localhost',
       port: parseInt(process.env.MAIL_PORT || '587'),
@@ -105,6 +112,13 @@ import { UserService } from './user/user.service';
           },
         },
         enableMail: true,
+        enableQueue: process.env.ENABLE_EMAIL_QUEUE === 'true',
+        queueConfig: {
+          concurrency: parseInt(process.env.EMAIL_QUEUE_CONCURRENCY || '5'),
+          attempts: parseInt(process.env.EMAIL_QUEUE_ATTEMPTS || '3'),
+          backoff: (process.env.EMAIL_QUEUE_BACKOFF as 'exponential' | 'fixed') || 'exponential',
+          backoffDelay: parseInt(process.env.EMAIL_QUEUE_BACKOFF_DELAY || '1000'),
+        },
         ttl: 300,
         secret: process.env.EMAIL_CAPTCHA_SECRET || 'default-secret',
       }),
