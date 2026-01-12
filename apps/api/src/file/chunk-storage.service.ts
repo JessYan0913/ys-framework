@@ -105,6 +105,12 @@ export class ChunkStorageService implements OnModuleDestroy {
   }
 
   async onModuleDestroy(): Promise<void> {
-    // 清理所有临时文件（可选，取决于是否需要在重启后保留未完成的上传）
+    try {
+      if (existsSync(this.baseDir)) {
+        await rm(this.baseDir, { recursive: true, force: true });
+      }
+    } catch {
+      return;
+    }
   }
 }
