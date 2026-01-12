@@ -1,3 +1,0 @@
--- FAKE_APPLY: This file content is commented out to sync migration history.
--- ALTER TYPE "task_type" ADD VALUE 'document_parse';--> statement-breakpoint
--- ALTER TYPE "task_type" ADD VALUE 'chunk_index';

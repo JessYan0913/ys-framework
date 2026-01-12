@@ -1,2 +1,0 @@
--- FAKE_APPLY: This file content is commented out to sync migration history.
--- ALTER TABLE "KnowledgeBase" ADD COLUMN "parser_config" jsonb DEFAULT '{}'::jsonb;

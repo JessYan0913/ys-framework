@@ -1,1 +1,0 @@
-ALTER TABLE "App" DROP COLUMN IF EXISTS "active";

@@ -1,1 +1,0 @@
-ALTER TABLE "Project" ADD COLUMN "pro_code" varchar(255) NOT NULL;

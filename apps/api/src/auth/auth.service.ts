@@ -3,7 +3,7 @@ import { MailService } from '@lib/mail';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { plan, subscription, user } from '@ys/database';
+import { user } from '@ys/database';
 import { DrizzleService } from '@ys/database/nestjs';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
@@ -49,29 +49,6 @@ export class AuthService {
             emailVerified: true,
           })
           .returning();
-
-        // 获取免费套餐
-        const [planRow] = await tx.select().from(plan).where(eq(plan.name, 'free')).limit(1);
-
-        if (!planRow) {
-          throw new Error('System Error');
-        }
-
-        // 计算套餐到期时间（默认一个月后）和下次积分重置时间（默认下个月1日）
-        const now = new Date();
-        const nextResetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-
-        // 创建用户订阅
-        await tx.insert(subscription).values({
-          planId: planRow.id,
-          accountId: userRow.id,
-          points: planRow.defaultPoints,
-          planPoints: planRow.defaultPoints,
-          conversationCount: 0,
-          conversationLimit: planRow.defaultConversationLimit ?? 0,
-          nextResetDate: nextResetDate,
-          metadata: { totalPoints: planRow.defaultPoints }, // 初始化积分总量
-        });
 
         // 发送欢迎邮件
         try {
