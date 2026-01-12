@@ -4,6 +4,7 @@ import { RateLimitInterceptor } from '@lib/common';
 import { EmailCaptchaModule } from '@lib/email-captcha';
 import { ImageCaptchaModule, LocalImageLoader } from '@lib/image-captcha';
 import { MailModule } from '@lib/mail';
+import { StorageModule } from '@lib/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -12,6 +13,7 @@ import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
 import { AuthModule as LocalAuthModule } from './auth/auth.module';
 import { CaptchaModule } from './captcha/captcha.module';
+import { FileModule } from './file/file.module';
 import { OidcModule } from './oidc/oidc.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
@@ -134,6 +136,8 @@ import { UserService } from './user/user.service';
     OidcModule,
     CaptchaModule,
     LocalAuthModule,
+    StorageModule.forRoot(),
+    FileModule,
   ],
   providers: [
     {

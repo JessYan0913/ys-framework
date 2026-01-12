@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Client } from 'minio';
-import { Storage } from '../interfaces/storage.interface';
+import { Readable } from 'stream';
+import { Storage, UploadOptions, UploadResult } from '../interfaces/storage.interface';
 
 @Injectable()
 export class MinioService implements Storage {
@@ -26,29 +27,51 @@ export class MinioService implements Storage {
     });
   }
 
-  async putObject(params: { key?: string; filename?: string; data: Buffer; contentType?: string }): Promise<string> {
-    const objectName = params.key ?? `${Date.now()}-${params.filename ?? 'file'}`;
+  async upload(data: Buffer | Readable, options?: UploadOptions): Promise<UploadResult> {
+    const key = options?.key ?? `${Date.now()}-${options?.filename ?? 'file'}`;
+    const metadata = options?.contentType ? { 'Content-Type': options.contentType } : undefined;
 
-    await this.client.putObject(
-      this.config.bucket,
-      objectName,
-      params.data,
-      params.data.length,
-      params.contentType ? { 'Content-Type': params.contentType } : undefined,
-    );
-
-    return objectName;
-  }
-
-  async getUrl(fileKey: string): Promise<string> {
-    if (this.config.publicBaseUrl) {
-      return `${this.config.publicBaseUrl}/${this.config.bucket}/${fileKey}`;
+    if (Buffer.isBuffer(data)) {
+      await this.client.putObject(this.config.bucket, key, data, data.length, metadata);
+    } else {
+      await this.client.putObject(this.config.bucket, key, data, undefined, metadata);
     }
 
-    return await this.client.presignedGetObject(this.config.bucket, fileKey);
+    return { key, size: Buffer.isBuffer(data) ? data.length : undefined };
   }
 
-  async delete(fileKey: string): Promise<void> {
-    await this.client.removeObject(this.config.bucket, fileKey);
+  async getUrl(key: string, expiresIn?: number): Promise<string> {
+    if (this.config.publicBaseUrl) {
+      return `${this.config.publicBaseUrl}/${this.config.bucket}/${key}`;
+    }
+    return await this.client.presignedGetObject(this.config.bucket, key, expiresIn ?? 7 * 24 * 60 * 60);
+  }
+
+  async getObject(key: string): Promise<Buffer> {
+    const stream = await this.client.getObject(this.config.bucket, key);
+    const chunks: Buffer[] = [];
+
+    return new Promise((resolve, reject) => {
+      stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
+  }
+
+  async getObjectStream(key: string): Promise<Readable> {
+    return await this.client.getObject(this.config.bucket, key);
+  }
+
+  async delete(key: string): Promise<void> {
+    await this.client.removeObject(this.config.bucket, key);
+  }
+
+  async exists(key: string): Promise<boolean> {
+    try {
+      await this.client.statObject(this.config.bucket, key);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
