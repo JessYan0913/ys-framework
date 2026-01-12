@@ -1,0 +1,2 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- ALTER TABLE "KnowledgeBaseDocument" DROP COLUMN IF EXISTS "object_name";

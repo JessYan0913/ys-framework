@@ -1,0 +1,57 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- CREATE TABLE IF NOT EXISTS "KnowledgeBase" (
+-- 	"id" varchar(191) PRIMARY KEY NOT NULL,
+-- 	"name" varchar(255) NOT NULL,
+-- 	"description" text,
+-- 	"creator_id" uuid,
+-- 	"organization_id" uuid,
+-- 	"metadata" jsonb DEFAULT '{}'::jsonb,
+-- 	"created_at" timestamp DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE IF NOT EXISTS "KnowledgeBaseDocument" (
+-- 	"id" varchar(191) PRIMARY KEY NOT NULL,
+-- 	"title" varchar(255) NOT NULL,
+-- 	"content" text,
+-- 	"file_url" text,
+-- 	"file_type" varchar(50),
+-- 	"file_size" integer,
+-- 	"status" varchar(32) DEFAULT 'pending' NOT NULL,
+-- 	"knowledge_base_id" varchar(191) NOT NULL,
+-- 	"creator_id" uuid NOT NULL,
+-- 	"metadata" jsonb DEFAULT '{}'::jsonb,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "KnowledgeBase" ADD CONSTRAINT "KnowledgeBase_creator_id_User_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."User"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "KnowledgeBase" ADD CONSTRAINT "KnowledgeBase_organization_id_Organization_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."Organization"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "KnowledgeBaseDocument" ADD CONSTRAINT "KnowledgeBaseDocument_knowledge_base_id_KnowledgeBase_id_fk" FOREIGN KEY ("knowledge_base_id") REFERENCES "public"."KnowledgeBase"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "KnowledgeBaseDocument" ADD CONSTRAINT "KnowledgeBaseDocument_creator_id_User_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "knowledge_base_creator_idx" ON "KnowledgeBase" USING btree ("creator_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "knowledge_base_org_idx" ON "KnowledgeBase" USING btree ("organization_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "kb_document_title_idx" ON "KnowledgeBaseDocument" USING btree ("title");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "kb_document_creator_idx" ON "KnowledgeBaseDocument" USING btree ("creator_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "kb_document_kb_idx" ON "KnowledgeBaseDocument" USING btree ("knowledge_base_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "kb_document_status_idx" ON "KnowledgeBaseDocument" USING btree ("status");

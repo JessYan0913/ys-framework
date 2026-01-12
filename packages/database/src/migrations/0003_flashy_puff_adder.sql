@@ -1,0 +1,1 @@
+ALTER TABLE "Chat" ADD COLUMN "projectId" varchar(191);

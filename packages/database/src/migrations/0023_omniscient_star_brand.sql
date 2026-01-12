@@ -1,0 +1,3 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- ALTER TABLE "KnowledgeBaseDocument" ADD COLUMN "progress" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" ADD COLUMN "progress_msg" text;

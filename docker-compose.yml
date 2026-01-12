@@ -1,0 +1,297 @@
+# ============================================================================
+#                    AI Chatbot Monorepo Docker Compose
+# ============================================================================
+# 包含以下服务:
+#   - web: Next.js 前端 (ys-web)
+#   - api: NestJS 后端 (ys-api)
+#   - postgres: PostgreSQL 数据库
+#   - redis: Redis 缓存
+#   - chrome: Browserless Chrome (PDF 导出)
+#   - minio: MinIO 对象存储
+#   - nginx: Nginx 反向代理
+#
+# 使用方法:
+#   开发环境: docker compose --profile dev up -d
+#   生产环境: docker compose --profile prod up -d
+#   仅基础设施: docker compose up -d (postgres, redis, minio)
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # 基础设施服务 (默认启动)
+  # ==========================================================================
+
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: ys-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ai_chatbot}
+      POSTGRES_USER: ${POSTGRES_USER:-ai_chatbot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ai_chatbot_secret}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-ai_chatbot} -d ${POSTGRES_DB:-ai_chatbot}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存
+  redis:
+    image: redis:7-alpine
+    container_name: ys-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Browserless Chrome (用于 PDF 导出)
+  chrome:
+    image: browserless/chrome:latest
+    container_name: ys-chrome
+    restart: unless-stopped
+    environment:
+      CONNECTION_TIMEOUT: 60000
+      MAX_CONCURRENT_SESSIONS: 10
+      ENABLE_DEBUGGER: 'false'
+      PREBOOT_CHROME: 'true'
+      KEEP_ALIVE: 'true'
+    ports:
+      - '${CHROME_PORT:-3002}:3000'
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MinIO 对象存储
+  minio:
+    image: minio/minio:latest
+    container_name: ys-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # 应用服务 (需要指定 profile)
+  # ==========================================================================
+
+  # Next.js 前端 (ys-web)
+  web:
+    build:
+      context: .
+      dockerfile: apps/ys-web/Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: ys-web
+    restart: unless-stopped
+    profiles:
+      - prod
+    environment:
+      # 基础配置
+      NODE_ENV: production
+      WEB_PORT: 3000
+      HOSTNAME: 0.0.0.0
+      # 数据库
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ai_chatbot}:${POSTGRES_PASSWORD:-ai_chatbot_secret}@postgres:5432/${POSTGRES_DB:-ai_chatbot}
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # NextAuth
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_SESSION_MAX_AGE: ${AUTH_SESSION_MAX_AGE:-86400}
+      # MinIO
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_USE_SSL: 'false'
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-ys}
+      # AI 模型
+      CHAT_MODEL_BASE_URL: ${CHAT_MODEL_BASE_URL}
+      CHAT_MODEL_API_KEY: ${CHAT_MODEL_API_KEY}
+      CHAT_MODEL_NAME: ${CHAT_MODEL_NAME}
+      SILICONFLOW_API_KEY: ${SILICONFLOW_API_KEY}
+      # Milvus 向量数据库
+      MILVUS_URL: ${MILVUS_URL}
+      MILVUS_TOKEN: ${MILVUS_TOKEN}
+      MILVUS_COLLECTION: ${MILVUS_COLLECTION}
+      # RAG 服务
+      RAG_API_URL: ${RAG_API_URL}
+      RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE:-500}
+      RAG_CHUNK_OVERLAP: ${RAG_CHUNK_OVERLAP:-100}
+      # 外部服务
+      WORKFLOW_API_URL: ${WORKFLOW_API_URL}
+      DIGITAL_TWIN_API_URL: ${DIGITAL_TWIN_API_URL}
+      DIGITAL_TWIN_MANAGER_URL: ${DIGITAL_TWIN_MANAGER_URL}
+      COMMAND_API_URL: ${COMMAND_API_URL}
+      DATA_ANALYSIS_API_URL: ${DATA_ANALYSIS_API_URL}
+      MEOS_API_URL: ${MEOS_API_URL}
+      IS_MEOS: ${IS_MEOS:-true}
+      DOCS_BASE_URL: ${DOCS_BASE_URL}
+      # MCP
+      MCP_SSE_URL: ${MCP_SSE_URL}
+      MCP_API_URL: ${MCP_API_URL}
+      # 安全
+      REDEEM_CODE_SECRET: ${REDEEM_CODE_SECRET}
+      # SaaS
+      SAAS_FEATURE_ENABLED: ${SAAS_FEATURE_ENABLED:-true}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      # Puppeteer/Chrome (远程服务)
+      PUPPETEER_BROWSER_URL: ws://chrome:3000
+      # 客户端公开变量
+      NEXT_PUBLIC_XUNFEI_WEBSOCKET_URL: ${NEXT_PUBLIC_XUNFEI_WEBSOCKET_URL}
+      NEXT_PUBLIC_XUNFEI_VOICE_API_ID: ${NEXT_PUBLIC_XUNFEI_VOICE_API_ID}
+      NEXT_PUBLIC_XUNFEI_VOICE_API_KEY: ${NEXT_PUBLIC_XUNFEI_VOICE_API_KEY}
+    ports:
+      - '${WEB_PORT:-3000}:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/api/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # NestJS 后端 (ys-api)
+  api:
+    build:
+      context: .
+      dockerfile: apps/ys-api/Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: ys-api
+    restart: unless-stopped
+    profiles:
+      - prod
+    environment:
+      # 基础配置
+      NODE_ENV: production
+      API_PORT: 3001
+      # 数据库
+      DATABASE_URL: postgresql://${POSTGRES_USER:-ai_chatbot}:${POSTGRES_PASSWORD:-ai_chatbot_secret}@postgres:5432/${POSTGRES_DB:-ai_chatbot}
+      # Redis
+      REDIS_URL: redis://redis:6379
+      CACHE_SERVICE: ${CACHE_SERVICE:-redis}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1h}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN:-7d}
+      ENABLE_JWT_GUARD: ${ENABLE_JWT_GUARD:-true}
+      ENABLE_RESOURCE_GUARD: ${ENABLE_RESOURCE_GUARD:-true}
+      # 验证码
+      CAPTCHA_SECRET: ${CAPTCHA_SECRET}
+      EMAIL_CAPTCHA_SECRET: ${EMAIL_CAPTCHA_SECRET}
+      # 邮件服务
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_SECURE: ${MAIL_SECURE:-false}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      MAIL_FROM: ${MAIL_FROM}
+      # OAuth - 飞书
+      FEISHU_APP_ID: ${FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET}
+      FEISHU_REDIRECT_URI: ${FEISHU_REDIRECT_URI}
+      # OIDC
+      NOCODB_CLIENT_ID: ${NOCODB_CLIENT_ID:-nocodb}
+      NOCODB_CLIENT_SECRET: ${NOCODB_CLIENT_SECRET}
+      NOCODB_REDIRECT_URI: ${NOCODB_REDIRECT_URI}
+      NOCODB_URL: ${NOCODB_URL}
+    ports:
+      - '${API_PORT:-3001}:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: ys-nginx
+    restart: unless-stopped
+    profiles:
+      - prod
+    ports:
+      - '${NGINX_HTTP_PORT:-80}:80'
+      - '${NGINX_HTTPS_PORT:-443}:443'
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - web
+      - api
+    networks:
+      - ys-network
+    healthcheck:
+      test: ['CMD', 'nginx', '-t']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# ==========================================================================
+# 数据卷
+# ==========================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  minio_data:
+    driver: local
+
+# ==========================================================================
+# 网络
+# ==========================================================================
+networks:
+  ys-network:
+    driver: bridge

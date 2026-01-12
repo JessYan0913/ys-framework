@@ -1,0 +1,3 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- ALTER TABLE "KnowledgeBaseDocument" ALTER COLUMN "process_duration" SET DATA TYPE real;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" SET DATA TYPE real;

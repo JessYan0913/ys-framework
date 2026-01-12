@@ -1,0 +1,41 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["*/package.json"],
+      "schema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "main": { "type": "string" },
+          "types": { "type": "string" },
+          "scripts": {
+            "type": "object",
+            "patternProperties": {
+              ".*": { "type": "string" }
+            }
+          },
+          "dependencies": {
+            "type": "object",
+            "patternProperties": {
+              ".*": { "type": "string" }
+            }
+          },
+          "devDependencies": {
+            "type": "object",
+            "patternProperties": {
+              ".*": { "type": "string" }
+            }
+          },
+          "peerDependencies": {
+            "type": "object",
+            "patternProperties": {
+              ".*": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

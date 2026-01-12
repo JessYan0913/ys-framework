@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@lib/*": ["lib/*"],
+      "@ys/database": ["../../packages/database/src"],
+      "@ys/database/nestjs": ["../../packages/database/adapters/nestjs"],
+      "@ys/database/nextjs": ["../../packages/database/adapters/nextjs"]
+    }
+  },
+  "references": [{ "path": "../../packages/database" }],
+  "include": ["src/**/*", "lib/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

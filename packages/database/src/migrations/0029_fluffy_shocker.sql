@@ -1,0 +1,9 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- DROP INDEX IF EXISTS "kb_document_title_idx";--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" ADD COLUMN "bucket_name" varchar(255) NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" ADD COLUMN "object_name" varchar(255) NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" ADD COLUMN "file_name" varchar(255) NOT NULL;--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "kb_document_title_idx" ON "KnowledgeBaseDocument" USING btree ("file_name");--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" DROP COLUMN IF EXISTS "title";--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" DROP COLUMN IF EXISTS "content";--> statement-breakpoint
+-- ALTER TABLE "KnowledgeBaseDocument" DROP COLUMN IF EXISTS "file_url";

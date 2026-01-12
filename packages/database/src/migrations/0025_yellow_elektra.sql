@@ -1,0 +1,2 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- ALTER TABLE "KnowledgeBaseDocument" ALTER COLUMN "progress" SET DATA TYPE real;

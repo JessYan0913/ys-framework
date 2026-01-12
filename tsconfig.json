@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ys/auth": ["packages/auth/src"],
+      "@ys/auth/*": ["packages/auth/src/*"],
+      "@ys/cache": ["packages/cache/src"],
+      "@ys/cache/*": ["packages/cache/src/*"],
+      "@ys/common": ["packages/common/src"],
+      "@ys/common/*": ["packages/common/src/*"],
+      "@ys/database": ["packages/database/src"],
+      "@ys/database/*": ["packages/database/src/*"],
+      "@ys/mail": ["packages/mail/src"],
+      "@ys/mail/*": ["packages/mail/src/*"],
+      "@ys/email-captcha": ["packages/email-captcha/src"],
+      "@ys/email-captcha/*": ["packages/email-captcha/src/*"],
+      "@ys/image-captcha": ["packages/image-captcha/src"],
+      "@ys/image-captcha/*": ["packages/image-captcha/src/*"],
+      "@ys/queue": ["packages/queue/src"],
+      "@ys/queue/*": ["packages/queue/src/*"],
+      "@ys/storage": ["packages/storage/src"],
+      "@ys/storage/*": ["packages/storage/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,1 @@
+ALTER TABLE "App" RENAME COLUMN "app_key" TO "app_key_hash";

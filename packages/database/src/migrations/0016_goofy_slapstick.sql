@@ -1,0 +1,3 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- DROP TABLE "UploadChunk";--> statement-breakpoint
+-- DROP TABLE "UploadSession";

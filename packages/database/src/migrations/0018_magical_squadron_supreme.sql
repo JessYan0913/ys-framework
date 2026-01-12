@@ -1,0 +1,105 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- CREATE TABLE IF NOT EXISTS "RagDocument" (
+-- 	"id" varchar(32) PRIMARY KEY NOT NULL,
+-- 	"create_time" bigint,
+-- 	"create_date" timestamp,
+-- 	"update_time" bigint,
+-- 	"update_date" timestamp,
+-- 	"thumbnail" text,
+-- 	"kb_id" varchar(256) NOT NULL,
+-- 	"parser_id" varchar(32) NOT NULL,
+-- 	"pipeline_id" varchar(32),
+-- 	"parser_config" text NOT NULL,
+-- 	"source_type" varchar(128) NOT NULL,
+-- 	"type" varchar(32) NOT NULL,
+-- 	"created_by" varchar(32) NOT NULL,
+-- 	"name" varchar(255),
+-- 	"location" varchar(255),
+-- 	"size" integer NOT NULL,
+-- 	"token_num" integer NOT NULL,
+-- 	"chunk_num" integer NOT NULL,
+-- 	"progress" real NOT NULL,
+-- 	"progress_msg" text,
+-- 	"process_begin_at" timestamp,
+-- 	"process_duration" real NOT NULL,
+-- 	"meta_fields" text,
+-- 	"suffix" varchar(32) NOT NULL,
+-- 	"run" varchar(1),
+-- 	"status" varchar(1)
+-- );
+-- --> statement-breakpoint
+-- ALTER TABLE "Task" RENAME COLUMN "updated_at" TO "update_time";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP CONSTRAINT "Task_document_id_KnowledgeBaseDocument_id_fk";
+-- --> statement-breakpoint
+-- ALTER TABLE "Task" DROP CONSTRAINT "Task_creator_id_User_id_fk";
+-- --> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_status_idx";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_type_idx";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_document_idx";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_priority_idx";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_digest_idx";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_created_at_idx";--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "id" SET DATA TYPE varchar(32);--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "task_type" SET DATA TYPE varchar(32);--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "from_page" SET NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "to_page" SET NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "priority" DROP DEFAULT;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "progress" SET DATA TYPE real;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "progress" DROP DEFAULT;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "begin_at" SET DATA TYPE timestamp;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" SET DATA TYPE real;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" DROP DEFAULT;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" SET NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "retry_count" DROP DEFAULT;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "digest" SET DATA TYPE text;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "update_time" SET DATA TYPE bigint;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "update_time" DROP DEFAULT;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "update_time" DROP NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "create_time" bigint;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "create_date" timestamp;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "update_date" timestamp;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "doc_id" varchar(32) NOT NULL;--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_create_time" ON "RagDocument" USING btree ("create_time");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_create_date" ON "RagDocument" USING btree ("create_date");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_update_time" ON "RagDocument" USING btree ("update_time");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_update_date" ON "RagDocument" USING btree ("update_date");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_kb_id" ON "RagDocument" USING btree ("kb_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_parser_id" ON "RagDocument" USING btree ("parser_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_pipeline_id" ON "RagDocument" USING btree ("pipeline_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_source_type" ON "RagDocument" USING btree ("source_type");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_type" ON "RagDocument" USING btree ("type");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_created_by" ON "RagDocument" USING btree ("created_by");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_name" ON "RagDocument" USING btree ("name");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_location" ON "RagDocument" USING btree ("location");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_size" ON "RagDocument" USING btree ("size");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_token_num" ON "RagDocument" USING btree ("token_num");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_chunk_num" ON "RagDocument" USING btree ("chunk_num");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_progress" ON "RagDocument" USING btree ("progress");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_process_begin_at" ON "RagDocument" USING btree ("process_begin_at");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_suffix" ON "RagDocument" USING btree ("suffix");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_run" ON "RagDocument" USING btree ("run");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "document_status" ON "RagDocument" USING btree ("status");--> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "Task" ADD CONSTRAINT "Task_doc_id_RagDocument_id_fk" FOREIGN KEY ("doc_id") REFERENCES "public"."RagDocument"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_create_time" ON "Task" USING btree ("create_time");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_create_date" ON "Task" USING btree ("create_date");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_update_time" ON "Task" USING btree ("update_time");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_update_date" ON "Task" USING btree ("update_date");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_doc_id" ON "Task" USING btree ("doc_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_begin_at" ON "Task" USING btree ("begin_at");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_progress" ON "Task" USING btree ("progress");--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "status";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "document_id";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "completed_at";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "max_retries";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "error";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "error_stack";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "config";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "result";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "creator_id";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "metadata";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "created_at";

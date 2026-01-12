@@ -1,0 +1,136 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- DO $$ BEGIN
+--  CREATE TYPE "public"."task_status" AS ENUM('pending', 'queued', 'running', 'completed', 'failed', 'cancelled', 'paused');
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  CREATE TYPE "public"."task_type" AS ENUM('document_upload', 'document_parse', 'chunk_index', 'vector_embedding', 'graphrag', 'raptor', 'mindmap');
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  CREATE TYPE "public"."upload_status" AS ENUM('initiating', 'uploading', 'merging', 'completed', 'failed', 'cancelled');
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- CREATE TABLE IF NOT EXISTS "Task" (
+-- 	"id" varchar(191) PRIMARY KEY NOT NULL,
+-- 	"task_type" "task_type" NOT NULL,
+-- 	"status" "task_status" DEFAULT 'pending' NOT NULL,
+-- 	"document_id" varchar(191),
+-- 	"from_page" integer,
+-- 	"to_page" integer,
+-- 	"priority" integer DEFAULT 0 NOT NULL,
+-- 	"progress" integer DEFAULT 0 NOT NULL,
+-- 	"progress_msg" text,
+-- 	"begin_at" timestamp with time zone,
+-- 	"completed_at" timestamp with time zone,
+-- 	"process_duration" integer DEFAULT 0,
+-- 	"retry_count" integer DEFAULT 0 NOT NULL,
+-- 	"max_retries" integer DEFAULT 3 NOT NULL,
+-- 	"digest" varchar(255),
+-- 	"chunk_ids" text,
+-- 	"error" text,
+-- 	"error_stack" text,
+-- 	"config" jsonb DEFAULT '{}'::jsonb,
+-- 	"result" jsonb DEFAULT '{}'::jsonb,
+-- 	"creator_id" uuid,
+-- 	"metadata" jsonb DEFAULT '{}'::jsonb,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE IF NOT EXISTS "UploadChunk" (
+-- 	"id" varchar(191) PRIMARY KEY NOT NULL,
+-- 	"upload_session_id" varchar(191) NOT NULL,
+-- 	"chunk_index" integer NOT NULL,
+-- 	"chunk_size" integer NOT NULL,
+-- 	"chunk_hash" varchar(64),
+-- 	"is_uploaded" integer DEFAULT 0 NOT NULL,
+-- 	"etag" varchar(255),
+-- 	"part_number" integer,
+-- 	"uploaded_at" timestamp with time zone,
+-- 	"metadata" jsonb DEFAULT '{}'::jsonb,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- CREATE TABLE IF NOT EXISTS "UploadSession" (
+-- 	"id" varchar(191) PRIMARY KEY NOT NULL,
+-- 	"filename" varchar(500) NOT NULL,
+-- 	"file_size" integer NOT NULL,
+-- 	"mime_type" varchar(100),
+-- 	"file_hash" varchar(64),
+-- 	"chunk_size" integer DEFAULT 5242880 NOT NULL,
+-- 	"total_chunks" integer NOT NULL,
+-- 	"uploaded_chunks" integer DEFAULT 0 NOT NULL,
+-- 	"status" "upload_status" DEFAULT 'initiating' NOT NULL,
+-- 	"object_name" varchar(500),
+-- 	"upload_id" text,
+-- 	"knowledge_base_id" varchar(191),
+-- 	"document_id" varchar(191),
+-- 	"task_id" varchar(191),
+-- 	"uploaded_size" integer DEFAULT 0 NOT NULL,
+-- 	"progress" integer DEFAULT 0 NOT NULL,
+-- 	"error" text,
+-- 	"creator_id" uuid NOT NULL,
+-- 	"expires_at" timestamp with time zone,
+-- 	"metadata" jsonb DEFAULT '{}'::jsonb,
+-- 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+-- 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+-- );
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "Task" ADD CONSTRAINT "Task_document_id_KnowledgeBaseDocument_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."KnowledgeBaseDocument"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "Task" ADD CONSTRAINT "Task_creator_id_User_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."User"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "UploadChunk" ADD CONSTRAINT "UploadChunk_upload_session_id_UploadSession_id_fk" FOREIGN KEY ("upload_session_id") REFERENCES "public"."UploadSession"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "UploadSession" ADD CONSTRAINT "UploadSession_document_id_KnowledgeBaseDocument_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."KnowledgeBaseDocument"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "UploadSession" ADD CONSTRAINT "UploadSession_task_id_Task_id_fk" FOREIGN KEY ("task_id") REFERENCES "public"."Task"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "UploadSession" ADD CONSTRAINT "UploadSession_creator_id_User_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."User"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_status_idx" ON "Task" USING btree ("status");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_type_idx" ON "Task" USING btree ("task_type");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_document_idx" ON "Task" USING btree ("document_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_priority_idx" ON "Task" USING btree ("priority");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_digest_idx" ON "Task" USING btree ("digest");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_created_at_idx" ON "Task" USING btree ("created_at");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_chunk_session_idx" ON "UploadChunk" USING btree ("upload_session_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_chunk_index_idx" ON "UploadChunk" USING btree ("chunk_index");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_chunk_uploaded_idx" ON "UploadChunk" USING btree ("is_uploaded");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_session_status_idx" ON "UploadSession" USING btree ("status");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_session_creator_idx" ON "UploadSession" USING btree ("creator_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_session_document_idx" ON "UploadSession" USING btree ("document_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_session_task_idx" ON "UploadSession" USING btree ("task_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "upload_session_expires_idx" ON "UploadSession" USING btree ("expires_at");

@@ -1,0 +1,1 @@
+ALTER TABLE "App" ADD COLUMN "title" varchar(120) DEFAULT '' NOT NULL;

@@ -1,0 +1,59 @@
+-- FAKE_APPLY: This file content is commented out to sync migration history.
+-- DROP TABLE "RagDocument";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP CONSTRAINT "Task_doc_id_RagDocument_id_fk";
+-- --> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_create_time";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_create_date";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_update_time";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_update_date";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_doc_id";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_begin_at";--> statement-breakpoint
+-- DROP INDEX IF EXISTS "task_progress";--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "id" SET DATA TYPE varchar(191);--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "from_page" DROP NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "to_page" DROP NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "task_type" SET DATA TYPE task_type;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "priority" SET DEFAULT 0;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "begin_at" SET DATA TYPE timestamp with time zone;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" SET DATA TYPE integer;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" SET DEFAULT 0;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "process_duration" DROP NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "progress" SET DATA TYPE integer;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "progress" SET DEFAULT 0;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "retry_count" SET DEFAULT 0;--> statement-breakpoint
+-- ALTER TABLE "Task" ALTER COLUMN "digest" SET DATA TYPE varchar(255);--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "status" "task_status" DEFAULT 'pending' NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "document_id" varchar(191);--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "completed_at" timestamp with time zone;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "max_retries" integer DEFAULT 3 NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "error" text;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "error_stack" text;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "config" jsonb DEFAULT '{}'::jsonb;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "result" jsonb DEFAULT '{}'::jsonb;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "creator_id" uuid;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "metadata" jsonb DEFAULT '{}'::jsonb;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
+-- ALTER TABLE "Task" ADD COLUMN "updated_at" timestamp with time zone DEFAULT now() NOT NULL;--> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "Task" ADD CONSTRAINT "Task_document_id_KnowledgeBaseDocument_id_fk" FOREIGN KEY ("document_id") REFERENCES "public"."KnowledgeBaseDocument"("id") ON DELETE cascade ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- DO $$ BEGIN
+--  ALTER TABLE "Task" ADD CONSTRAINT "Task_creator_id_User_id_fk" FOREIGN KEY ("creator_id") REFERENCES "public"."User"("id") ON DELETE set null ON UPDATE no action;
+-- EXCEPTION
+--  WHEN duplicate_object THEN null;
+-- END $$;
+-- --> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_status_idx" ON "Task" USING btree ("status");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_type_idx" ON "Task" USING btree ("task_type");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_document_idx" ON "Task" USING btree ("document_id");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_priority_idx" ON "Task" USING btree ("priority");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_digest_idx" ON "Task" USING btree ("digest");--> statement-breakpoint
+-- CREATE INDEX IF NOT EXISTS "task_created_at_idx" ON "Task" USING btree ("created_at");--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "create_time";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "create_date";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "update_time";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "update_date";--> statement-breakpoint
+-- ALTER TABLE "Task" DROP COLUMN IF EXISTS "doc_id";

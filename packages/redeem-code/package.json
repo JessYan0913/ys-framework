@@ -1,0 +1,33 @@
+{
+  "name": "@ys/redeem-code",
+  "version": "0.0.1",
+  "description": "Redeem code generation and validation utilities for AI Chatbot monorepo",
+  "main": "./dist/src/index.js",
+  "types": "./dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "crypto": "^1.0.1",
+    "dotenv": "^16.3.1",
+    "drizzle-orm": "^0.29.0",
+    "@ys/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@ys/eslint-config": "workspace:*",
+    "@types/node": "^20.0.0",
+    "eslint": "^8.57.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.1.3"
+  }
+}
