@@ -1,7 +1,7 @@
 export class CaptchaError extends Error {
   constructor(
     message: string,
-    public code?: string
+    public code?: string,
   ) {
     super(message);
     this.name = 'CaptchaError';

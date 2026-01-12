@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { createTransport, Transporter } from 'nodemailer';
-import { MAIL_CONFIG } from '../mail.constants';
 import { MailConfig, MailOptions } from '../interfaces/mail.interface';
+import { MAIL_CONFIG } from '../mail.constants';
 import { MailProvider } from './mail.provider';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class SmtpMailProvider implements MailProvider {
       secure: this.config.secure,
       auth: this.config.auth,
     });
-    
+
     this.logger.log(`SMTP 邮件服务初始化: ${this.config.host}:${this.config.port}`);
   }
 

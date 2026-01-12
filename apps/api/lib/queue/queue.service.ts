@@ -1,5 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Queue, JobsOptions, ConnectionOptions } from 'bullmq';
+import { ConnectionOptions, JobsOptions, Queue } from 'bullmq';
 
 export type QueueModuleOptions = {
   connection: ConnectionOptions;

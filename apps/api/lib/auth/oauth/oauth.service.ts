@@ -1,7 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { BaseOAuthProvider, OAuthConfig } from './oauth-providers';
-import { FeishuOAuthProvider } from './oauth-providers';
 import { OAuthProvider } from '../interfaces/user.interface';
+import { BaseOAuthProvider, FeishuOAuthProvider, OAuthConfig } from './oauth-providers';
 import { OAuthStateStore } from './oauth-state-store';
 
 export interface OAuthProvidersConfig {
@@ -22,7 +21,7 @@ export class OAuthService {
 
   private initializeProviders() {
     if (!this.config) return;
-    
+
     if (this.config.feishu) {
       this.providers.set('feishu', new FeishuOAuthProvider(this.config.feishu));
     }

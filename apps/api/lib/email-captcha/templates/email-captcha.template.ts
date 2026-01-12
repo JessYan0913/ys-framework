@@ -7,7 +7,7 @@ export interface EmailCaptchaTemplateData {
 
 export function generateEmailCaptchaHtml(data: EmailCaptchaTemplateData): string {
   const { purposeText, purposeAction, code, ttlMinutes } = data;
-  
+
   return `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -129,7 +129,7 @@ export function generateEmailCaptchaHtml(data: EmailCaptchaTemplateData): string
 
 export function generateEmailCaptchaText(data: EmailCaptchaTemplateData): string {
   const { purposeText, purposeAction, code, ttlMinutes } = data;
-  
+
   return `亲爱的用户，您好！
 
 为了您的安全，我们为您生成了${purposeText}验证码：

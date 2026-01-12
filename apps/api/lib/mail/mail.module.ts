@@ -1,7 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
-import { MailService } from './mail.service';
 import { MailConfig } from './interfaces/mail.interface';
 import { MAIL_CONFIG, MAIL_PROVIDER } from './mail.constants';
+import { MailService } from './mail.service';
 import { SmtpMailProvider } from './providers/smtp-mail.provider';
 
 @Global()

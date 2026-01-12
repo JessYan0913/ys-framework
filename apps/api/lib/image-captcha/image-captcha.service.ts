@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { sign, verify } from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
+import { sign, verify } from 'jsonwebtoken';
 
 import { CaptchaError, CaptchaNotFoundError, StorageError, ValidationError } from './core/errors';
 import { createPuzzle } from './core/puzzle-generator';
@@ -56,7 +56,7 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
       const id = randomBytes(16).toString('hex');
       const key = `captcha:${id}:data`;
       const data: CaptchaData = { x: puzzle.x, purpose };
-      
+
       await this.config.storage.set(key, JSON.stringify(data), this.config.ttl);
       this.logger.log(`验证码数据已存储，ID: ${id}, TTL: ${this.config.ttl}秒`);
 
@@ -76,7 +76,7 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
 
   async verifyCaptcha(body: VerifyTrailPayload): Promise<VerifyCaptchaResult> {
     this.logger.log(`验证图片验证码，ID: ${body.id}`);
-    
+
     if (!body || !Array.isArray(body.trail)) {
       this.logger.warn(`验证码载荷无效: ${JSON.stringify(body)}`);
       throw new ValidationError('Invalid captcha payload');
@@ -87,7 +87,7 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
     let expectedXFromStore: number | null = null;
     let storedPurpose: string | null = null;
     const id = body.id;
-    
+
     try {
       const key = `captcha:${id}:data`;
       const stored = await this.config.storage.get(key);
@@ -108,7 +108,7 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
     if (expectedXFromStore != null && Number.isFinite(body.x)) {
       const diff = Math.abs(body.x - expectedXFromStore);
       this.logger.log(`X坐标比对，提交: ${body.x}, 期望: ${expectedXFromStore}, 差值: ${diff}`);
-      
+
       if (diff > this.config.trailTolerance) {
         this.logger.warn(`X坐标超出容差范围: ${diff} > ${this.config.trailTolerance}`);
         throw new CaptchaError('expected_x_mismatch', 'EXPECTED_X_MISMATCH');
@@ -136,7 +136,7 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
         throw new StorageError(`Failed to delete captcha data: ${error}`);
       }
     }
-    
+
     const token = sign({ id, purpose: storedPurpose || '' }, this.config.secret, {
       expiresIn: `${Math.floor(this.config.ttl / 60)}m`,
     });
@@ -148,14 +148,14 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
       this.logger.error(`存储Token映射失败: ${error.message}`);
       throw new StorageError(`Failed to store captcha token mapping: ${error}`);
     }
-    
+
     this.logger.log(`图片验证码验证成功: ${id}`);
     return { id, token };
   }
 
   async verifyToken(id: string, token: string, purpose: string): Promise<boolean> {
     this.logger.log(`验证token: ${id}, 用途: ${purpose}`);
-    
+
     try {
       const result = verify(token, this.config.secret);
       const payload = result as TokenPayload;
@@ -177,13 +177,13 @@ export class ImageCaptchaService implements CaptchaServiceInterface {
       await this.config.storage.del(tokenKey);
       this.logger.log(`Token验证成功且已作废(一次性): ${id}`);
       const isValid = true;
-      
+
       if (isValid) {
         this.logger.log(`Token验证成功: ${id}`);
       } else {
         this.logger.warn(`Token验证失败: ${id}`);
       }
-      
+
       return isValid;
     } catch (error) {
       this.logger.error(`Token验证异常: ${error.message}`);

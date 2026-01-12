@@ -1,6 +1,6 @@
-import { Module, DynamicModule, Global } from '@nestjs/common';
+import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ImageCaptchaService } from './image-captcha.service';
-import { CaptchaConfig, Storage, ImageLoader } from './types';
+import { CaptchaConfig, ImageLoader, Storage } from './types';
 
 export interface CaptchaModuleOptions {
   storage: Storage;

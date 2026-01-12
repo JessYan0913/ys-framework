@@ -48,7 +48,7 @@ export async function createPuzzle(options: PuzzleOptions): Promise<PuzzleResult
   else if (x > maxOffsetX) x = maxOffsetX;
 
   const maxOffsetY = bgHeight - height;
-  let y = randomInt(0, Math.max(0, maxOffsetY));
+  const y = randomInt(0, Math.max(0, maxOffsetY));
 
   const originImg = await loadImage(imgUrl);
   const origW = originImg.width;

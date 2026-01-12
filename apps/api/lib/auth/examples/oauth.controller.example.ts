@@ -1,6 +1,5 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthService, OAuthAuthGuard } from '../index';
-import { OAuthProvider } from '../interfaces/user.interface';
 
 @Controller('auth')
 export class AuthController {
@@ -12,7 +11,7 @@ export class AuthController {
     try {
       const url = this.authService.getOAuthAuthorizationUrl('feishu', state);
       return { url };
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Feishu OAuth not configured');
     }
   }

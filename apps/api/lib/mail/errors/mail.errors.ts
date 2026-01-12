@@ -6,15 +6,18 @@ export class MailError extends HttpException {
     public readonly code: string,
     public readonly retryable: boolean = false,
     public readonly provider?: string,
-    httpStatus: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR
+    httpStatus: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
   ) {
-    super({
-      statusCode: httpStatus,
-      message,
-      error: code,
-      provider,
-      retryable,
-    }, httpStatus);
+    super(
+      {
+        statusCode: httpStatus,
+        message,
+        error: code,
+        provider,
+        retryable,
+      },
+      httpStatus,
+    );
   }
 }
 

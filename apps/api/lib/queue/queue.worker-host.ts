@@ -22,8 +22,7 @@ export class QueueWorkerHost implements OnModuleInit, OnModuleDestroy {
 
     this.worker = new Worker(
       this.options.queueName,
-      async (job) =>
-        await this.processor.process({ name: job.name, data: job.data } satisfies QueueJob),
+      async (job) => await this.processor.process({ name: job.name, data: job.data } satisfies QueueJob),
       {
         connection,
         prefix,

@@ -1,7 +1,7 @@
-import { MailService } from '../mail';
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { sign, verify } from 'jsonwebtoken';
+import { MailService } from '../mail';
 
 import { CaptchaError, CaptchaNotFoundError, StorageError, ValidationError } from './errors/email-captcha.errors';
 import { generateEmailCaptchaHtml, generateEmailCaptchaText } from './templates/email-captcha.template';
@@ -73,7 +73,7 @@ export class EmailCaptchaService implements EmailCaptchaServiceInterface {
         const html = generateEmailCaptchaHtml(templateData);
         const textBody = generateEmailCaptchaText(templateData);
 
-        const messageId = await this.mailService.sendMail({
+        await this.mailService.sendMail({
           to: email,
           subject,
           html,

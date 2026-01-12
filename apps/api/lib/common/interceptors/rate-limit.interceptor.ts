@@ -1,14 +1,6 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  HttpException,
-  HttpStatus,
-  Inject,
-} from '@nestjs/common';
-import { Observable } from 'rxjs';
+import { CallHandler, ExecutionContext, HttpException, HttpStatus, Injectable, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { Observable } from 'rxjs';
 import { RATE_LIMIT_KEY, RateLimitOptions } from '../decorators/rate-limit.decorator';
 
 interface RateLimitRecord {
@@ -23,19 +15,14 @@ export class RateLimitInterceptor implements NestInterceptor {
   constructor(private readonly reflector: Reflector) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const rateLimitOptions = this.reflector.get<RateLimitOptions>(
-      RATE_LIMIT_KEY,
-      context.getHandler(),
-    );
+    const rateLimitOptions = this.reflector.get<RateLimitOptions>(RATE_LIMIT_KEY, context.getHandler());
 
     if (!rateLimitOptions) {
       return next.handle();
     }
 
     const request = context.switchToHttp().getRequest();
-    const key = rateLimitOptions.keyGenerator 
-      ? rateLimitOptions.keyGenerator(request)
-      : this.getDefaultKey(request);
+    const key = rateLimitOptions.keyGenerator ? rateLimitOptions.keyGenerator(request) : this.getDefaultKey(request);
 
     const now = Date.now();
     const record = this.store.get(key);
@@ -50,10 +37,7 @@ export class RateLimitInterceptor implements NestInterceptor {
     }
 
     if (record.count >= rateLimitOptions.max) {
-      throw new HttpException(
-        rateLimitOptions.message,
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new HttpException(rateLimitOptions.message, HttpStatus.TOO_MANY_REQUESTS);
     }
 
     // 增加计数

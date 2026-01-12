@@ -1,7 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import * as Handlebars from 'handlebars';
-import { MailConfig, MailOptions, MailTemplate } from './interfaces/mail.interface';
-import { MAIL_CONFIG, MAIL_PROVIDER } from './mail.constants';
 import {
   MailAuthenticationError,
   MailConnectionError,
@@ -10,6 +8,8 @@ import {
   MailTimeoutError,
   MailValidationError,
 } from './errors/mail.errors';
+import { MailConfig, MailOptions, MailTemplate } from './interfaces/mail.interface';
+import { MAIL_CONFIG, MAIL_PROVIDER } from './mail.constants';
 import { MailProvider } from './providers/mail.provider';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class MailService {
 
   constructor(
     @Inject(MAIL_CONFIG) private readonly config: MailConfig,
-    @Inject(MAIL_PROVIDER) private readonly provider: MailProvider
+    @Inject(MAIL_PROVIDER) private readonly provider: MailProvider,
   ) {}
 
   /**
@@ -64,11 +64,11 @@ export class MailService {
     const html = Handlebars.compile(template.html)(data);
     const text = template.text ? Handlebars.compile(template.text)(data) : undefined;
 
-    return this.sendMail({ 
-      to, 
-      subject: template.subject, 
-      html, 
-      text 
+    return this.sendMail({
+      to,
+      subject: template.subject,
+      html,
+      text,
     });
   }
 
@@ -79,9 +79,9 @@ export class MailService {
    * @param dataList 模板数据列表（与收件人一一对应）
    */
   async sendBatchTemplate(
-    recipients: string[], 
-    template: MailTemplate, 
-    dataList: Record<string, any>[]
+    recipients: string[],
+    template: MailTemplate,
+    dataList: Record<string, any>[],
   ): Promise<Array<{ to: string; messageId: string }>> {
     const results: Array<{ to: string; messageId: string }> = [];
 

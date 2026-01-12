@@ -27,13 +27,13 @@ export abstract class BaseOAuthProvider {
   constructor(protected readonly config: OAuthConfig) {}
 
   abstract getProviderName(): OAuthProvider;
-  
+
   abstract getAuthorizationUrl(state?: string): string;
-  
+
   abstract exchangeCodeForToken(code: string): Promise<OAuthAccessToken>;
-  
+
   abstract getUserInfo(accessToken: string, extra?: string): Promise<OAuthUserProfile>;
-  
+
   abstract refreshToken(refreshToken: string): Promise<OAuthAccessToken>;
 }
 
@@ -76,21 +76,24 @@ export class FeishuOAuthProvider extends BaseOAuthProvider {
   }
 
   async exchangeCodeForToken(code: string): Promise<OAuthAccessToken> {
-    const response = await fetch(this.config.accessTokenEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      this.config.accessTokenEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/access_token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_type: 'authorization_code',
+          app_id: this.getAppId(),
+          app_secret: this.getAppSecret(),
+          client_id: this.config.clientId,
+          client_secret: this.config.clientSecret,
+          code: code,
+          redirect_uri: this.getRedirectUri(),
+        }),
       },
-      body: JSON.stringify({
-        grant_type: 'authorization_code',
-        app_id: this.getAppId(),
-        app_secret: this.getAppSecret(),
-        client_id: this.config.clientId,
-        client_secret: this.config.clientSecret,
-        code: code,
-        redirect_uri: this.getRedirectUri(),
-      }),
-    });
+    );
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
@@ -114,16 +117,21 @@ export class FeishuOAuthProvider extends BaseOAuthProvider {
   }
 
   async getUserInfo(accessToken: string, _extra?: string): Promise<OAuthUserProfile> {
-    const response = await fetch(this.config.userInfoEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/user_info', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
+    const response = await fetch(
+      this.config.userInfoEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/user_info',
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    });
+    );
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      throw new Error(`Feishu user info HTTP error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+      throw new Error(
+        `Feishu user info HTTP error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`,
+      );
     }
 
     const data = await response.json().catch(() => null);
@@ -149,22 +157,27 @@ export class FeishuOAuthProvider extends BaseOAuthProvider {
   }
 
   async refreshToken(refreshToken: string): Promise<OAuthAccessToken> {
-    const response = await fetch(this.config.refreshTokenEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/refresh_access_token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      this.config.refreshTokenEndpoint || 'https://open.feishu.cn/open-apis/authen/v1/refresh_access_token',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          app_id: this.getAppId(),
+          app_secret: this.getAppSecret(),
+          refresh_token: refreshToken,
+        }),
       },
-      body: JSON.stringify({
-        grant_type: 'refresh_token',
-        app_id: this.getAppId(),
-        app_secret: this.getAppSecret(),
-        refresh_token: refreshToken,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
-      throw new Error(`Feishu refresh token HTTP error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`);
+      throw new Error(
+        `Feishu refresh token HTTP error: ${response.status} ${response.statusText}${text ? ` - ${text}` : ''}`,
+      );
     }
 
     const data = await response.json().catch(() => null);

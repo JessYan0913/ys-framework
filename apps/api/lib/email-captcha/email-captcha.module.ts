@@ -1,5 +1,5 @@
-import { MailConfig, MailModule, MailService } from '../mail';
 import { DynamicModule, Global, Module } from '@nestjs/common';
+import { MailConfig, MailModule, MailService } from '../mail';
 import { EmailCaptchaService } from './email-captcha.service';
 import { EmailCaptchaConfig } from './types';
 

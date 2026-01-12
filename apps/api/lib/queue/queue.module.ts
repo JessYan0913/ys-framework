@@ -2,7 +2,7 @@ import { DynamicModule, Global, Module, Type } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { getQueueToken, getWorkerToken, RegisterQueueOptions } from './queue.constants';
 import { QueueProcessor } from './queue.processor';
-import { QueueService, QueueModuleOptions } from './queue.service';
+import { QueueModuleOptions, QueueService } from './queue.service';
 import { QueueWorkerHost } from './queue.worker-host';
 
 export type RegisterProcessorOptions = {

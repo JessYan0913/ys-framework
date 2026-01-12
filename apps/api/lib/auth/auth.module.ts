@@ -5,12 +5,12 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { JWTAuthGuard } from './guards/jwt-auth.guard';
 import { ResourceAuthGuard } from './guards/resource-auth.guard';
+import { UserService } from './interfaces/user.interface';
+import { MemoryOAuthStateStore, OAUTH_STATE_STORE, OAuthStateStore } from './oauth/oauth-state-store';
+import { OAuthProvidersConfig, OAuthService } from './oauth/oauth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { OAuthStrategy } from './strategies/oauth.strategy';
-import { OAuthService, OAuthProvidersConfig } from './oauth/oauth.service';
-import { UserService } from './interfaces/user.interface';
-import { MemoryOAuthStateStore, OAUTH_STATE_STORE, OAuthStateStore } from './oauth/oauth-state-store';
 import { TokenRevocationOptions, TokenRevocationService } from './token-revocation.service';
 
 export interface ForRootOptions {
@@ -60,7 +60,8 @@ export class AuthModule {
     // 如果配置了 OAuth，添加相关服务
     if (oauth) {
       const stateStoreProvider: Provider<OAuthStateStore> =
-        oauthStateStoreProvider || ({ provide: OAUTH_STATE_STORE, useFactory: () => new MemoryOAuthStateStore() } as any);
+        oauthStateStoreProvider ||
+        ({ provide: OAUTH_STATE_STORE, useFactory: () => new MemoryOAuthStateStore() } as any);
 
       providers.push(
         stateStoreProvider as any,
@@ -95,7 +96,11 @@ export class AuthModule {
         }),
       ],
       providers: [...providers, ...guards],
-      exports: [AuthService, ...(oauth ? [OAuthService] : []), ...(tokenRevocation?.enabled ? [TokenRevocationService] : [])],
+      exports: [
+        AuthService,
+        ...(oauth ? [OAuthService] : []),
+        ...(tokenRevocation?.enabled ? [TokenRevocationService] : []),
+      ],
     };
   }
 }

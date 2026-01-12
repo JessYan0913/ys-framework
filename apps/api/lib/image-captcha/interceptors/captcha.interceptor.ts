@@ -16,7 +16,7 @@ export class CaptchaInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
 
     // 优先从装饰器获取 purpose，如果没有则从请求体获取
-    let purpose =
+    const purpose =
       this.reflector.get<string>(CAPTCHA_PURPOSE_KEY, context.getHandler()) ||
       this.reflector.get<string>(CAPTCHA_PURPOSE_KEY, context.getClass()) ||
       request.body?.purpose;

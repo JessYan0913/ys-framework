@@ -124,7 +124,7 @@ export class AuthService {
       throw new Error('Invalid refresh token');
     }
 
-    const { tokenType, iat, exp, nbf, jti, ...userPayload } = payload;
+    const { tokenType: _tokenType, iat: _iat, exp: _exp, nbf: _nbf, jti: _jti, ...userPayload } = payload;
     const { accessToken } = await this.sharedAuthService.login(userPayload as UserPayload);
 
     return {

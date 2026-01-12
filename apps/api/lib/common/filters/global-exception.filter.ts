@@ -18,7 +18,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
@@ -36,12 +36,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = exception.message;
       code = 'UNKNOWN_ERROR';
-      
+
       // 根据错误消息推断更具体的错误码
       if (exception.message.includes('not found') || exception.message.includes('不存在')) {
         code = 'NOT_FOUND';
         status = HttpStatus.NOT_FOUND;
-      } else if (exception.message.includes('invalid') || exception.message.includes('错误') || exception.message.includes('mismatch')) {
+      } else if (
+        exception.message.includes('invalid') ||
+        exception.message.includes('错误') ||
+        exception.message.includes('mismatch')
+      ) {
         code = 'INVALID_REQUEST';
         status = HttpStatus.BAD_REQUEST;
       } else if (exception.message.includes('unauthorized') || exception.message.includes('未授权')) {
@@ -51,7 +55,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code = 'FORBIDDEN';
         status = HttpStatus.FORBIDDEN;
       }
-      
+
       // 处理验证码相关异常（通过错误消息识别）
       if (exception.message.includes('captcha') || exception.message.includes('验证码')) {
         if (exception.message.includes('not found') || exception.message.includes('不存在')) {

@@ -18,11 +18,12 @@ export class EmailCaptchaInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    
+
     // 优先从装饰器获取 purpose，如果没有则从请求体获取
-    let purpose = this.reflector.get<string>(EMAIL_CAPTCHA_PURPOSE_KEY, context.getHandler()) ||
-                  this.reflector.get<string>(EMAIL_CAPTCHA_PURPOSE_KEY, context.getClass()) ||
-                  request.body?.purpose;
+    const purpose =
+      this.reflector.get<string>(EMAIL_CAPTCHA_PURPOSE_KEY, context.getHandler()) ||
+      this.reflector.get<string>(EMAIL_CAPTCHA_PURPOSE_KEY, context.getClass()) ||
+      request.body?.purpose;
 
     // 如果没有设置 purpose，直接放行
     if (!purpose || purpose === 'default') {
