@@ -2,8 +2,6 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import { sign, verify } from 'jsonwebtoken';
 import { MailService } from '../mail';
-import { QueueService } from '../queue';
-import { EMAIL_CAPTCHA_JOB_NAME, EMAIL_CAPTCHA_QUEUE_NAME } from './email-captcha.processor';
 
 import { CaptchaError, CaptchaNotFoundError, StorageError, ValidationError } from './errors/email-captcha.errors';
 import { generateEmailCaptchaHtml, generateEmailCaptchaText } from './templates/email-captcha.template';
@@ -28,7 +26,6 @@ export class EmailCaptchaService implements EmailCaptchaServiceInterface {
   constructor(
     private config: EmailCaptchaConfig,
     @Optional() private mailService?: MailService,
-    @Optional() private queueService?: QueueService,
   ) {
     if (!config.storage) {
       throw new Error('Storage service must be provided');
@@ -63,31 +60,8 @@ export class EmailCaptchaService implements EmailCaptchaServiceInterface {
       throw new StorageError(`Failed to store captcha: ${error}`);
     }
 
-    // 发送邮件（优先使用队列异步发送）
-    if (this.queueService) {
-      try {
-        const { attempts = 3, backoff = 'exponential', backoffDelay = 1000 } = this.config.queueConfig || {};
-        await this.queueService.add(
-          EMAIL_CAPTCHA_QUEUE_NAME,
-          EMAIL_CAPTCHA_JOB_NAME,
-          {
-            email,
-            code,
-            purpose,
-            ttl: this.config.ttl,
-          },
-          {
-            attempts,
-            backoff: { type: backoff, delay: backoffDelay },
-          },
-        );
-        this.logger.log(`验证码邮件已加入队列: ${email}`);
-      } catch (error) {
-        this.logger.error(`添加邮件任务到队列失败: ${error.message}`);
-        throw new CaptchaError(`Failed to queue email: ${error.message}`, 'EMAIL_QUEUE_FAILED');
-      }
-    } else if (this.mailService) {
-      // 同步发送
+    // 发送邮件（使用 MailService，由 MailService 决定同步或异步）
+    if (this.mailService) {
       try {
         const subject = `验证码：${code}`;
         const templateData = {
@@ -99,13 +73,14 @@ export class EmailCaptchaService implements EmailCaptchaServiceInterface {
         const html = generateEmailCaptchaHtml(templateData);
         const textBody = generateEmailCaptchaText(templateData);
 
-        await this.mailService.sendMail({
+        // 使用异步发送，MailService 内部决定是否通过队列
+        await this.mailService.sendMailAsync({
           to: email,
           subject,
           html,
           text: textBody,
         });
-        this.logger.log(`验证码邮件已同步发送: ${email}`);
+        this.logger.log(`验证码邮件已发送: ${email}`);
       } catch (error) {
         throw new CaptchaError(`Failed to send email: ${error.message}`, 'EMAIL_SEND_FAILED');
       }

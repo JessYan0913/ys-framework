@@ -10,16 +10,39 @@ import {
 } from './errors/mail.errors';
 import { MailConfig, MailOptions, MailTemplate } from './interfaces/mail.interface';
 import { MAIL_CONFIG, MAIL_PROVIDER } from './mail.constants';
+import { MAIL_JOB_NAME, MAIL_QUEUE_NAME } from './mail.processor';
 import { MailProvider } from './providers/mail.provider';
+
+export interface MailQueueConfig {
+  attempts?: number;
+  backoff?: 'exponential' | 'fixed';
+  backoffDelay?: number;
+}
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
+  private queueService: any;
+  private queueConfig: MailQueueConfig = {
+    attempts: 3,
+    backoff: 'exponential',
+    backoffDelay: 1000,
+  };
 
   constructor(
     @Inject(MAIL_CONFIG) private readonly config: MailConfig,
     @Inject(MAIL_PROVIDER) private readonly provider: MailProvider,
   ) {}
+
+  /**
+   * 设置队列服务（由模块注入）
+   */
+  setQueueService(queueService: any, config?: MailQueueConfig): void {
+    this.queueService = queueService;
+    if (config) {
+      this.queueConfig = { ...this.queueConfig, ...config };
+    }
+  }
 
   /**
    * 发送邮件
@@ -92,6 +115,37 @@ export class MailService {
     }
 
     return results;
+  }
+
+  /**
+   * 异步发送邮件（通过队列）
+   * 如果队列服务不可用，降级为同步发送
+   */
+  async sendMailAsync(options: MailOptions): Promise<void> {
+    this.validateMailOptions(options);
+
+    if (this.queueService) {
+      try {
+        const { attempts, backoff, backoffDelay } = this.queueConfig;
+        await this.queueService.add(MAIL_QUEUE_NAME, MAIL_JOB_NAME, options, {
+          attempts,
+          backoff: { type: backoff, delay: backoffDelay },
+        });
+        this.logger.log(`邮件已加入队列: ${options.to}`);
+      } catch (error) {
+        this.logger.error(`添加邮件到队列失败，降级为同步发送: ${error.message}`);
+        await this.sendMail(options);
+      }
+    } else {
+      await this.sendMail(options);
+    }
+  }
+
+  /**
+   * 检查是否启用了队列
+   */
+  isQueueEnabled(): boolean {
+    return !!this.queueService;
   }
 
   /**

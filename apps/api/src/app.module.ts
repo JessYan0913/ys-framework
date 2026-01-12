@@ -77,6 +77,12 @@ import { UserService } from './user/user.service';
         pass: process.env.MAIL_PASS || '',
       },
       from: process.env.MAIL_FROM || 'noreply@example.com',
+      enableQueue: process.env.ENABLE_MAIL_QUEUE === 'true',
+      queueConfig: {
+        attempts: parseInt(process.env.MAIL_QUEUE_ATTEMPTS || '3'),
+        backoff: (process.env.MAIL_QUEUE_BACKOFF as 'exponential' | 'fixed') || 'exponential',
+        backoffDelay: parseInt(process.env.MAIL_QUEUE_BACKOFF_DELAY || '1000'),
+      },
     }),
     ImageCaptchaModule.forRootAsync({
       useFactory: (cache: Cache) => ({
@@ -112,13 +118,6 @@ import { UserService } from './user/user.service';
           },
         },
         enableMail: true,
-        enableQueue: process.env.ENABLE_EMAIL_QUEUE === 'true',
-        queueConfig: {
-          concurrency: parseInt(process.env.EMAIL_QUEUE_CONCURRENCY || '5'),
-          attempts: parseInt(process.env.EMAIL_QUEUE_ATTEMPTS || '3'),
-          backoff: (process.env.EMAIL_QUEUE_BACKOFF as 'exponential' | 'fixed') || 'exponential',
-          backoffDelay: parseInt(process.env.EMAIL_QUEUE_BACKOFF_DELAY || '1000'),
-        },
         ttl: 300,
         secret: process.env.EMAIL_CAPTCHA_SECRET || 'default-secret',
       }),
