@@ -1,9 +1,11 @@
 import { Cache } from '@lib/cache';
+import { QueueService } from '@lib/queue';
 import { Storage } from '@lib/storage';
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Readable } from 'stream';
 import { ChunkInfo, ChunkStorageService } from './chunk-storage.service';
+import { FILE_JOB_NAMES, FILE_QUEUE_NAME } from './file.processor';
 
 export interface UploadSession {
   uploadId: string;
@@ -17,16 +19,47 @@ export interface UploadSession {
   createdAt: number;
 }
 
+export interface FileQueueConfig {
+  enablePostProcess?: boolean;
+  enableAsyncDelete?: boolean;
+  attempts?: number;
+  backoff?: 'exponential' | 'fixed';
+  backoffDelay?: number;
+}
+
 @Injectable()
 export class FileService {
+  private readonly logger = new Logger(FileService.name);
   private readonly UPLOAD_SESSION_TTL = 24 * 60 * 60; // 24小时
   private readonly DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  private queueConfig: FileQueueConfig = {
+    enablePostProcess: true,
+    enableAsyncDelete: true,
+    attempts: 3,
+    backoff: 'exponential',
+    backoffDelay: 1000,
+  };
 
   constructor(
     @Inject('Storage') private readonly storage: Storage,
     @Inject('Cache') private readonly cache: Cache,
     private readonly chunkStorage: ChunkStorageService,
+    @Optional() private readonly queueService?: QueueService,
   ) {}
+
+  /**
+   * 设置队列配置
+   */
+  setQueueConfig(config: FileQueueConfig): void {
+    this.queueConfig = { ...this.queueConfig, ...config };
+  }
+
+  /**
+   * 检查队列是否可用
+   */
+  isQueueEnabled(): boolean {
+    return !!this.queueService;
+  }
 
   async initiateUpload(params: {
     filename: string;
@@ -148,6 +181,14 @@ export class FileService {
     await this.chunkStorage.cleanup(params.uploadId);
     await this.cache.del(this.getSessionKey(params.uploadId));
 
+    // 触发文件后处理任务
+    await this.triggerPostProcess({
+      fileKey: session.fileKey,
+      filename: session.filename,
+      contentType: session.contentType,
+      fileSize: session.fileSize,
+    });
+
     return {
       fileKey: session.fileKey,
       url,
@@ -226,6 +267,27 @@ export class FileService {
     }
   }
 
+  /**
+   * 异步删除文件（通过队列）
+   */
+  async deleteFileAsync(fileKey: string): Promise<void> {
+    if (this.queueService && this.queueConfig.enableAsyncDelete) {
+      const { attempts, backoff, backoffDelay } = this.queueConfig;
+      await this.queueService.add(
+        FILE_QUEUE_NAME,
+        FILE_JOB_NAMES.DELETE_FILE,
+        { fileKey },
+        {
+          attempts,
+          backoff: { type: backoff, delay: backoffDelay },
+        },
+      );
+      this.logger.log(`文件删除任务已加入队列: ${fileKey}`);
+    } else {
+      await this.deleteFile(fileKey);
+    }
+  }
+
   async simpleUpload(params: { filename: string; data: Buffer; contentType?: string }): Promise<{
     fileKey: string;
     url: string;
@@ -241,7 +303,60 @@ export class FileService {
 
     const url = await this.storage.getUrl(fileKey);
 
+    // 触发文件后处理任务
+    await this.triggerPostProcess({
+      fileKey,
+      filename: params.filename,
+      contentType: params.contentType,
+      fileSize: params.data.length,
+    });
+
     return { fileKey, url };
+  }
+
+  /**
+   * 触发文件后处理任务
+   */
+  private async triggerPostProcess(data: {
+    fileKey: string;
+    filename: string;
+    contentType?: string;
+    fileSize: number;
+  }): Promise<void> {
+    if (this.queueService && this.queueConfig.enablePostProcess) {
+      try {
+        const { attempts, backoff, backoffDelay } = this.queueConfig;
+        await this.queueService.add(FILE_QUEUE_NAME, FILE_JOB_NAMES.POST_PROCESS, data, {
+          attempts,
+          backoff: { type: backoff, delay: backoffDelay },
+        });
+        this.logger.log(`文件后处理任务已加入队列: ${data.fileKey}`);
+      } catch (error) {
+        this.logger.error(`添加文件后处理任务失败: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * 调度清理过期上传任务
+   */
+  async scheduleCleanupExpired(expireTime?: number): Promise<void> {
+    if (this.queueService) {
+      const { attempts, backoff, backoffDelay } = this.queueConfig;
+      await this.queueService.add(
+        FILE_QUEUE_NAME,
+        FILE_JOB_NAMES.CLEANUP_EXPIRED,
+        {
+          expireTime: expireTime ?? Date.now() - this.UPLOAD_SESSION_TTL * 1000,
+          batchSize: 100,
+        },
+        {
+          attempts,
+          backoff: { type: backoff, delay: backoffDelay },
+        },
+      );
+      this.logger.log('过期上传清理任务已加入队列');
+    }
   }
 
   private getSessionKey(uploadId: string): string {

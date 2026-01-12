@@ -150,7 +150,16 @@ import { UserService } from './user/user.service';
     CaptchaModule,
     LocalAuthModule,
     StorageModule.forRoot(),
-    FileModule,
+    FileModule.forRoot({
+      enableQueue: process.env.ENABLE_FILE_QUEUE === 'true',
+      queueConfig: {
+        enablePostProcess: process.env.ENABLE_FILE_POST_PROCESS !== 'false',
+        enableAsyncDelete: process.env.ENABLE_FILE_ASYNC_DELETE === 'true',
+        attempts: parseInt(process.env.FILE_QUEUE_ATTEMPTS || '3'),
+        backoff: (process.env.FILE_QUEUE_BACKOFF as 'exponential' | 'fixed') || 'exponential',
+        backoffDelay: parseInt(process.env.FILE_QUEUE_BACKOFF_DELAY || '1000'),
+      },
+    }),
   ],
   providers: [
     {
