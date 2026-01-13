@@ -13,6 +13,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useCallback, useRef, useState } from 'react';
 
 import { toast } from '@/components/toast';
@@ -63,6 +64,7 @@ const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function FilesPage() {
   const t = useI18n();
+  const { data: session } = useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
@@ -72,28 +74,40 @@ export default function FilesPage() {
   const [isDragging, setIsDragging] = useState(false);
 
   const getAuthHeaders = useCallback(() => {
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-  }, []);
+    if ((session as any)?.accessToken) {
+      headers['Authorization'] = `Bearer ${(session as any).accessToken}`;
+    }
+    return headers;
+  }, [session]);
 
   // Simple upload for small files
-  const simpleUpload = useCallback(async (file: File): Promise<{ fileKey: string; url: string }> => {
-    const formData = new FormData();
-    formData.append('file', file);
+  const simpleUpload = useCallback(
+    async (file: File): Promise<{ fileKey: string; url: string }> => {
+      const formData = new FormData();
+      formData.append('file', file);
 
-    const response = await fetch(`${API_BASE_URL}/files/upload/simple`, {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    });
+      const headers: Record<string, string> = {};
+      if ((session as any)?.accessToken) {
+        headers['Authorization'] = `Bearer ${(session as any).accessToken}`;
+      }
 
-    if (!response.ok) {
-      throw new Error('Upload failed');
-    }
+      const response = await fetch(`${API_BASE_URL}/files/upload/simple`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
 
-    return response.json();
-  }, []);
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      return response.json();
+    },
+    [session],
+  );
 
   // Chunked upload for large files
   const chunkedUpload = useCallback(
@@ -115,24 +129,29 @@ export default function FilesPage() {
         throw new Error('Failed to initiate upload');
       }
 
-      const session: ChunkUploadSession = await initResponse.json();
+      const uploadSession: ChunkUploadSession = await initResponse.json();
 
       // Step 2: Upload chunks
-      const totalChunks = session.totalChunks;
+      const totalChunks = uploadSession.totalChunks;
       for (let i = 0; i < totalChunks; i++) {
-        const start = i * session.chunkSize;
-        const end = Math.min(start + session.chunkSize, file.size);
+        const start = i * uploadSession.chunkSize;
+        const end = Math.min(start + uploadSession.chunkSize, file.size);
         const chunk = file.slice(start, end);
 
         const formData = new FormData();
-        formData.append('uploadId', session.uploadId);
-        formData.append('fileKey', session.fileKey);
+        formData.append('uploadId', uploadSession.uploadId);
+        formData.append('fileKey', uploadSession.fileKey);
         formData.append('partNumber', String(i + 1));
         formData.append('file', chunk);
 
+        const chunkHeaders: Record<string, string> = {};
+        if ((session as any)?.accessToken) {
+          chunkHeaders['Authorization'] = `Bearer ${(session as any).accessToken}`;
+        }
+
         const chunkResponse = await fetch(`${API_BASE_URL}/files/upload/chunk`, {
           method: 'POST',
-          credentials: 'include',
+          headers: chunkHeaders,
           body: formData,
         });
 
@@ -140,11 +159,10 @@ export default function FilesPage() {
           // Abort upload on failure
           await fetch(`${API_BASE_URL}/files/upload/abort`, {
             method: 'POST',
-            credentials: 'include',
             headers: getAuthHeaders(),
             body: JSON.stringify({
-              uploadId: session.uploadId,
-              fileKey: session.fileKey,
+              uploadId: uploadSession.uploadId,
+              fileKey: uploadSession.fileKey,
             }),
           });
           throw new Error(`Failed to upload chunk ${i + 1}`);
@@ -156,11 +174,10 @@ export default function FilesPage() {
       // Step 3: Complete upload
       const completeResponse = await fetch(`${API_BASE_URL}/files/upload/complete`, {
         method: 'POST',
-        credentials: 'include',
         headers: getAuthHeaders(),
         body: JSON.stringify({
-          uploadId: session.uploadId,
-          fileKey: session.fileKey,
+          uploadId: uploadSession.uploadId,
+          fileKey: uploadSession.fileKey,
         }),
       });
 
@@ -170,7 +187,7 @@ export default function FilesPage() {
 
       return completeResponse.json();
     },
-    [getAuthHeaders],
+    [getAuthHeaders, session],
   );
 
   const handleFileUpload = useCallback(
@@ -239,8 +256,13 @@ export default function FilesPage() {
 
   const handleGetFileUrl = async (fileKey: string) => {
     try {
+      const headers: Record<string, string> = {};
+      if ((session as any)?.accessToken) {
+        headers['Authorization'] = `Bearer ${(session as any).accessToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/files/${fileKey}/url`, {
-        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {
@@ -257,8 +279,13 @@ export default function FilesPage() {
 
   const handleDownloadFile = async (fileKey: string, filename: string) => {
     try {
+      const headers: Record<string, string> = {};
+      if ((session as any)?.accessToken) {
+        headers['Authorization'] = `Bearer ${(session as any).accessToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/files/${fileKey}/download`, {
-        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {
@@ -285,9 +312,14 @@ export default function FilesPage() {
     if (!fileToDelete) return;
 
     try {
+      const headers: Record<string, string> = {};
+      if ((session as any)?.accessToken) {
+        headers['Authorization'] = `Bearer ${(session as any).accessToken}`;
+      }
+
       const response = await fetch(`${API_BASE_URL}/files/${fileToDelete.fileKey}`, {
         method: 'DELETE',
-        credentials: 'include',
+        headers,
       });
 
       if (!response.ok) {
