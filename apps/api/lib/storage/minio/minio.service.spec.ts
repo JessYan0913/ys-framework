@@ -58,21 +58,16 @@ describe('MinioService', () => {
     });
   });
 
-  it('putObject should call client.putObject and return object key', async () => {
-    const key = await service.putObject({
+  it('upload should call client.putObject and return object key', async () => {
+    const result = await service.upload(Buffer.from('hello'), {
       key: 'k1',
-      data: Buffer.from('hello'),
       contentType: 'text/plain',
     });
 
-    expect(key).toBe('k1');
-    expect(minioClientMock.putObject).toHaveBeenCalledWith(
-      'bucket',
-      'k1',
-      expect.any(Buffer),
-      5,
-      { 'Content-Type': 'text/plain' },
-    );
+    expect(result.key).toBe('k1');
+    expect(minioClientMock.putObject).toHaveBeenCalledWith('bucket', 'k1', expect.any(Buffer), 5, {
+      'Content-Type': 'text/plain',
+    });
   });
 
   it('getUrl should return public url when publicBaseUrl is set', async () => {
