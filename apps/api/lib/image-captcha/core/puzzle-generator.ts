@@ -23,10 +23,11 @@ export type PuzzleResult = {
 };
 
 function computeDrawRect(origW: number, origH: number, targetW: number, targetH: number) {
-  const scale = Math.min(targetW / origW, targetH / origH);
-  const finalScale = Math.min(1, scale); // No upscale
-  const dw = Math.round(origW * finalScale);
-  const dh = Math.round(origH * finalScale);
+  // 使用 cover 模式：图片完全覆盖目标区域，可能裁剪部分内容
+  const scale = Math.max(targetW / origW, targetH / origH);
+  const dw = Math.round(origW * scale);
+  const dh = Math.round(origH * scale);
+  // 居中裁剪
   const dx = Math.round((targetW - dw) / 2);
   const dy = Math.round((targetH - dh) / 2);
   return { dx, dy, dw, dh, sx: 0, sy: 0, sw: origW, sh: origH };
