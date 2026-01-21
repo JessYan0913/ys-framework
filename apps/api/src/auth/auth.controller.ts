@@ -33,60 +33,49 @@ export class AuthController {
   async githubCallback(
     @Query('code') code: string,
     @Query('state') state: string,
-    @Res({ passthrough: true }) response: Response,
-  ): Promise<LoginVO> {
+    @Res() response: Response,
+  ): Promise<void> {
     console.log('======>', code);
     
-    const result = await this.authService.githubLogin(code, state);
+    try {
+      const result = await this.authService.githubLogin(code, state);
 
-    // 写入 JWT Cookie 给我方前端使用
-    response.cookie('access_token', result.accessToken, {
-      httpOnly: false, // 允许前端访问用于 API 调用
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 1000, // 1小时
-    });
-
-    // 写入 refresh token Cookie
-    response.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true, // 安全考虑，仅 http
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
-    });
-
-    // 如果有 OIDC ID Token，写入跨域 Cookie 给 NocoDB 使用
-    if (result.oidc?.idToken) {
-      response.cookie('oidc_id_token', result.oidc.idToken, {
-        httpOnly: true,
+      // 写入 JWT Cookie 给我方前端使用
+      response.cookie('access_token', result.accessToken, {
+        httpOnly: false, // 允许前端访问用于 API 调用
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'none', // 跨域支持
-        domain: process.env.COOKIE_DOMAIN || undefined, // 支持主域共享
+        sameSite: 'lax',
+        path: '/',
         maxAge: 60 * 60 * 1000, // 1小时
       });
-    }
 
-    // Redirect to frontend or return result (for API clients)
-    // Since this is usually a browser flow, we might want to redirect.
-    // However, the requirement says "返回JWT", but also "Integration with frontend".
-    // Usually OAuth callback redirects to frontend with token or sets cookies and redirects.
-    // The existing login endpoint sets cookies and returns JSON.
-    // For a GET callback, we probably want to redirect to the frontend with tokens or just cookies.
-    // Let's assume we redirect to the frontend home page or a specific callback page.
-    
-    // For now, let's redirect to root with a success indicator?
-    // Or maybe the frontend handles the callback?
-    // The requirement says: "GET /auth/github/callback ... 生成JWT返回给前端"
-    // If I return JSON here, the browser will just show JSON.
-    // The frontend task says: "处理授权完成后的回调逻辑".
-    // If the backend handles the callback, the browser is at /auth/github/callback.
-    // So the backend MUST redirect to the frontend.
-    console.log('授权完成');
-    
-    response.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?login_success=true`);
-    return result; // This won't be sent if redirected, but keeps TS happy.
+      // 写入 refresh token Cookie
+      response.cookie('refresh_token', result.refreshToken, {
+        httpOnly: true, // 安全考虑，仅 http
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7天
+      });
+
+      // 如果有 OIDC ID Token，写入跨域 Cookie 给 NocoDB 使用
+      if (result.oidc?.idToken) {
+        response.cookie('oidc_id_token', result.oidc.idToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'none', // 跨域支持
+          domain: process.env.COOKIE_DOMAIN || undefined, // 支持主域共享
+          maxAge: 60 * 60 * 1000, // 1小时
+        });
+      }
+
+      console.log('授权完成');
+      response.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}?login_success=true`);
+    } catch (error) {
+      console.error('Github login failed:', error);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+      response.redirect(`${frontendUrl}?error=github_login_failed&message=${encodeURIComponent(error.message || 'Unknown error')}`);
+    }
   }
 
   @Post('/register')
