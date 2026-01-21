@@ -72,19 +72,36 @@ export class UserService implements IUserService<UserPayload> {
       }
     }
 
-    // Create new user
-    const newUser = await this.drizzle.db
-      .insert(user)
-      .values({
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-      })
-      .returning();
+    let targetUser: User;
+
+    // Check if user with same email exists
+    if (profile.email) {
+      const existingUser = await this.drizzle.db.select().from(user).where(eq(user.email, profile.email)).limit(1);
+      if (existingUser.length > 0) {
+        targetUser = existingUser[0];
+      }
+    }
+
+    if (!targetUser) {
+      if (!profile.email) {
+        throw new BadRequestException('第三方登录未提供邮箱，无法创建账号');
+      }
+
+      // Create new user
+      const newUser = await this.drizzle.db
+        .insert(user)
+        .values({
+          name: profile.name,
+          email: profile.email,
+          phone: profile.phone,
+        })
+        .returning();
+      targetUser = newUser[0];
+    }
 
     // Create identity link
     await this.drizzle.db.insert(userAuthIdentities).values({
-      userId: newUser[0].id,
+      userId: targetUser.id,
       provider: profile.provider,
       providerUserId: profile.providerUserId,
       unionId: profile.unionId,
@@ -92,7 +109,7 @@ export class UserService implements IUserService<UserPayload> {
       raw: JSON.stringify(profile.raw),
     });
 
-    return this.toUserPayload(newUser[0]);
+    return this.toUserPayload(targetUser);
   }
 
   async findOrCreateByPhone(phone: string): Promise<UserPayload> {

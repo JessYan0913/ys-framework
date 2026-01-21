@@ -2,10 +2,12 @@ import { Injectable, Optional } from '@nestjs/common';
 import { OAuthProvider } from '../interfaces/user.interface';
 import { BaseOAuthProvider, OAuthConfig } from './oauth-providers';
 import { FeishuOAuthProvider } from './providers/feishu.provider';
+import { GithubOAuthProvider } from './providers/github.provider';
 import { OAuthStateStore } from './oauth-state-store';
 
 export interface OAuthProvidersConfig {
   feishu?: OAuthConfig;
+  github?: OAuthConfig;
   [key: string]: OAuthConfig | undefined;
 }
 
@@ -25,6 +27,9 @@ export class OAuthService {
 
     if (this.config.feishu) {
       this.providers.set('feishu', new FeishuOAuthProvider(this.config.feishu));
+    }
+    if (this.config.github) {
+      this.providers.set('github', new GithubOAuthProvider(this.config.github));
     }
   }
 
@@ -51,6 +56,13 @@ export class OAuthService {
     const state = await this.createState(provider, meta);
     const url = this.getAuthorizationUrl(provider, state);
     return { url, state };
+  }
+
+  async verifyState(provider: OAuthProvider, state: string, meta?: string): Promise<boolean> {
+    if (!this.stateStore) {
+      throw new Error('OAuth state store is not configured');
+    }
+    return this.stateStore.consume(provider, state, meta);
   }
 
   async exchangeCodeForToken(provider: OAuthProvider, code: string) {

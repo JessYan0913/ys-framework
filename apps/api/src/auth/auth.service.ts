@@ -1,6 +1,6 @@
 import { AuthService as SharedAuthService, TokenRevocationService, UserPayload } from '@lib/auth';
 import { MailService } from '@lib/mail';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { user } from '@ys/database';
@@ -13,6 +13,8 @@ import { LoginVO } from './vo/login.vo';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly userService: UserService,
     private readonly drizzle: DrizzleService,
@@ -173,5 +175,51 @@ export class AuthService {
       console.error('Failed to reset password', error);
       throw error;
     }
+  }
+
+  async getGithubAuthUrl() {
+    this.logger.log('Generating GitHub auth URL');
+    return this.sharedAuthService.getOAuthAuthorizationUrlWithState('github');
+  }
+
+  async githubLogin(code: string, state: string): Promise<LoginVO> {
+    this.logger.log(`Processing GitHub login callback. State: ${state}`);
+    const isValidState = await this.sharedAuthService.verifyOAuthState('github', state);
+    if (!isValidState) {
+      this.logger.warn(`Invalid OAuth state: ${state}`);
+      throw new Error('Invalid OAuth state');
+    }
+
+    const userPayload = await this.sharedAuthService.validateOAuthLogin('github', code);
+    this.logger.log(`GitHub login validated for user: ${userPayload.email}`);
+    
+    // Generate tokens similar to regular login
+    const { accessToken } = await this.sharedAuthService.login(userPayload);
+    const refreshToken = this.jwtService.sign(
+      { ...(userPayload as any), tokenType: 'refresh' },
+      { expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d' },
+    );
+
+    // Generate OIDC ID Token
+    const idToken = this.jwtService.sign(
+      {
+        sub: userPayload.id,
+        email: userPayload.email,
+        name: userPayload.name,
+        aud: this.configService.get('NOCODB_CLIENT_ID') || 'nocodb',
+        iat: Math.floor(Date.now() / 1000),
+        iss: `${this.configService.get('BASE_URL') || 'http://localhost:3001'}/oidc`,
+      },
+      { expiresIn: '1h' },
+    );
+    
+    return {
+      user: userPayload as any,
+      accessToken,
+      refreshToken,
+      oidc: {
+        idToken,
+      },
+    };
   }
 }

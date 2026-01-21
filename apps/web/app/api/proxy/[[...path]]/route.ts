@@ -47,6 +47,7 @@ async function proxyHandler(req: NextRequest, { params }: { params: Promise<{ pa
             body: ["GET", "HEAD"].includes(req.method) ? null : req.body,
             // @ts-ignore: duplex 是 Web Stream 标准，Node 环境 fetch 需要此参数
             duplex: "half",
+            redirect: "manual", // 不自动跟随重定向
         });
 
         // 5. 处理响应头
@@ -56,6 +57,12 @@ async function proxyHandler(req: NextRequest, { params }: { params: Promise<{ pa
         const setCookie = response.headers.get("set-cookie");
         if (setCookie) {
             responseHeaders.set("set-cookie", setCookie);
+        }
+
+        // 处理重定向 Location
+        const location = response.headers.get("location");
+        if (location) {
+             responseHeaders.set("location", location);
         }
 
         // 6. 返回响应（支持流式输出）

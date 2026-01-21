@@ -6,7 +6,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { Github } from 'lucide-react';
 
+import { OAuthButton } from '@/components/oauth-button';
 import { TermsAgreementCheckbox } from '@/components/terms-agreement-checkbox';
 import { toast } from '@/components/toast';
 import { Button } from '@/components/ui/button';
@@ -120,6 +122,20 @@ export default function Page() {
           <Button type="submit" className="w-full">
             登录
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">或者通过以下方式登录</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <OAuthButton provider="github" icon={<Github className="h-4 w-4" />} label="GitHub" />
+          </div>
+
           <div className="text-center text-sm text-muted-foreground mt-4">
             没有账号？
             <Link href="/register" className="text-primary underline">

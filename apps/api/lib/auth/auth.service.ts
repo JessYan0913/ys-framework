@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { OAuthProvider, ResourcePayload, UserPayload, UserService } from './interfaces/user.interface';
+import { ResourcePayload, UserPayload, UserService, OAuthUserProfile, OAuthProvider } from './interfaces/user.interface';
 import { OAuthService } from './oauth/oauth.service';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class AuthService {
   async validateUser(username: string, password: string): Promise<UserPayload> {
     const user = await this.userService.validateUser(username, password);
     if (user) {
-      const { password: _password, ...result } = user;
+      const { password, ...result } = user;
       return result;
     }
     return null;
@@ -38,18 +38,31 @@ export class AuthService {
     return this.oauthService.getAuthorizationUrl(provider, state);
   }
 
+  // 获取带状态的第三方登录授权URL
+  async getOAuthAuthorizationUrlWithState(
+    provider: OAuthProvider,
+    meta?: string,
+  ): Promise<{ url: string; state: string }> {
+    return this.oauthService.getAuthorizationUrlWithState(provider, meta);
+  }
+
+  // 验证第三方登录状态
+  async verifyOAuthState(provider: OAuthProvider, state: string, meta?: string): Promise<boolean> {
+    return this.oauthService.verifyState(provider, state, meta);
+  }
+
   // 第三方登录验证
   async validateOAuthLogin(provider: OAuthProvider, code: string): Promise<UserPayload> {
     try {
       // 交换访问令牌
       const tokenResponse = await this.oauthService.exchangeCodeForToken(provider, code);
-
+      
       // 获取用户信息
       const userProfile = await this.oauthService.getUserInfo(provider, tokenResponse.access_token);
-
+      
       // 查找或创建用户
       const user = await this.userService.findOrCreateByOAuth(userProfile);
-
+      
       return user;
     } catch (error) {
       throw new Error(`OAuth login failed for ${provider}: ${error.message}`);
@@ -60,7 +73,7 @@ export class AuthService {
   async oauthLogin(provider: OAuthProvider, code: string): Promise<{ accessToken: string; user: UserPayload }> {
     const user = await this.validateOAuthLogin(provider, code);
     const accessToken = this.jwtService.sign({ ...user });
-
+    
     return {
       accessToken,
       user,

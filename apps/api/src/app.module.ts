@@ -142,6 +142,11 @@ import { UserService } from './user/user.service';
           appSecret: process.env.FEISHU_APP_SECRET ?? '',
           redirectUri: process.env.FEISHU_REDIRECT_URI ?? '',
         },
+        github: {
+          clientId: process.env.GITHUB_CLIENT_ID ?? '',
+          clientSecret: process.env.GITHUB_CLIENT_SECRET ?? '',
+          redirectUri: process.env.GITHUB_CALLBACK_URL ?? '',
+        },
       },
     }),
     DrizzleModule,

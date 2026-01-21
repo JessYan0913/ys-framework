@@ -8,7 +8,7 @@ export interface ResourcePayload {
   resource: string;
 }
 
-export type OAuthProvider = 'feishu';
+export type OAuthProvider = 'feishu' | 'github';
 
 export interface OAuthUserProfile {
   provider: OAuthProvider;
