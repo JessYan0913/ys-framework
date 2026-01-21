@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { OAuthProvider } from '../interfaces/user.interface';
-import { BaseOAuthProvider, FeishuOAuthProvider, OAuthConfig } from './oauth-providers';
+import { BaseOAuthProvider, OAuthConfig } from './oauth-providers';
+import { FeishuOAuthProvider } from './providers/feishu.provider';
 import { OAuthStateStore } from './oauth-state-store';
 
 export interface OAuthProvidersConfig {
