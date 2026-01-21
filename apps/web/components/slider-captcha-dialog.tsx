@@ -88,7 +88,7 @@ export function SliderCaptchaDialog({
         trail: data?.trail,
       };
 
-      const response = await fetch('/api/captcha/image/verify', {
+      const response = await fetch('/api/proxy/captcha/image/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +180,7 @@ export function SliderCaptchaDialog({
                   const promise = (async () => {
                     try {
                       // 直接调用API路由创建验证码
-                      const response = await fetch('/api/captcha/image/create', {
+                      const response = await fetch('/api/proxy/captcha/image/create', {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',

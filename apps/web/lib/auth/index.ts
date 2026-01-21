@@ -6,6 +6,54 @@ import { authConfig } from './config';
 
 const AUTH_API_URL = process.env.AUTH_API_URL || 'http://localhost:3001';
 
+// Token 刷新提前量（秒）- 在过期前 5 分钟刷新
+const TOKEN_REFRESH_BUFFER = 5 * 60;
+
+/**
+ * 解析 JWT Token 获取过期时间
+ */
+function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+    return payload.exp ? payload.exp * 1000 : null; // 转换为毫秒
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 检查 Token 是否即将过期
+ */
+function isTokenExpiringSoon(token: string): boolean {
+  const expiry = getTokenExpiry(token);
+  if (!expiry) return true; // 无法解析时视为需要刷新
+  return Date.now() >= expiry - TOKEN_REFRESH_BUFFER * 1000;
+}
+
+/**
+ * 刷新 Access Token
+ */
+async function refreshAccessToken(refreshToken: string): Promise<{ accessToken: string } | null> {
+  try {
+    const res = await fetch(`${AUTH_API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!res.ok) {
+      console.error('Token refresh failed:', res.status);
+      return null;
+    }
+
+    const data = await res.json();
+    return { accessToken: data.accessToken };
+  } catch (error) {
+    console.error('Token refresh error:', error);
+    return null;
+  }
+}
+
 // 辅助函数：同步组织 Cookie（保留你原有的逻辑）
 async function syncOrganizationCookie(selectedOrganizationId: string | null): Promise<void> {
   const cookieStore = await cookies();
@@ -85,7 +133,29 @@ export const {
         token.refreshToken = u.refreshToken;
         token.appId = u.appId;
         token.isAppAuth = !!u.appId;
+        return token;
       }
+
+      // 检查 accessToken 是否即将过期，如果是则刷新
+      if (token.accessToken && token.refreshToken) {
+        const accessToken = token.accessToken as string;
+        const refreshToken = token.refreshToken as string;
+
+        if (isTokenExpiringSoon(accessToken)) {
+          console.log('[Auth] Access token expiring soon, refreshing...');
+          const refreshed = await refreshAccessToken(refreshToken);
+
+          if (refreshed) {
+            token.accessToken = refreshed.accessToken;
+            console.log('[Auth] Access token refreshed successfully');
+          } else {
+            // 刷新失败，清除 token 强制重新登录
+            console.error('[Auth] Token refresh failed, user needs to re-login');
+            token.error = 'RefreshAccessTokenError';
+          }
+        }
+      }
+
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
@@ -94,6 +164,11 @@ export const {
       }
       // 将 Token 暴露给客户端或 Server Components
       session.accessToken = token.accessToken;
+
+      // 传递 token 刷新错误到 session
+      if (token.error) {
+        session.error = token.error;
+      }
 
       if (token.isAppAuth) {
         session.appAuth = { appId: token.appId };
@@ -118,6 +193,15 @@ export const {
               'Content-Type': 'application/json',
               authorization: `Bearer ${(session as any).accessToken}`,
             },
+          });
+        }
+
+        // 3. 结束 OIDC 会话，使所有 SSO 客户端的 token 失效
+        if (session?.user?.id) {
+          await fetch(`${AUTH_API_URL}/oidc/logout`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: session.user.id }),
           });
         }
       } catch (error) {

@@ -81,7 +81,7 @@ export default function Page() {
   const handleSendEmailCaptcha = async () => {
     try {
       // 直接调用API路由发送邮件验证码
-      const response = await fetch('/api/captcha/email/send', {
+      const response = await fetch('/api/proxy/captcha/email/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +114,7 @@ export default function Page() {
       return;
     }
     try {
-      const verifyResponse = await fetch('/api/captcha/email/verify', {
+      const verifyResponse = await fetch('/api/proxy/captcha/email/verify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ export default function Page() {
         throw new Error(verifyResult.error || '邮箱验证失败');
       }
 
-      const registerResponse = await fetch('/api/auth/register', {
+      const registerResponse = await fetch('/api/proxy/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
