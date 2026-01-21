@@ -1,9 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 import { OAuthProvider, OAuthUserProfile } from '../../interfaces/user.interface';
 import { BaseOAuthProvider, OAuthAccessToken } from '../oauth-providers';
 
 @Injectable()
 export class GithubOAuthProvider extends BaseOAuthProvider {
+  private readonly proxyAgent: HttpsProxyAgent<string> | undefined;
+
+  constructor(config: any) {
+    super(config);
+    const proxyUrl = process.env.https_proxy || process.env.http_proxy || process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
+    if (proxyUrl) {
+      console.log(`[GithubOAuthProvider] Using proxy: ${proxyUrl}`);
+      this.proxyAgent = new HttpsProxyAgent(proxyUrl);
+    }
+  }
+
   getProviderName(): OAuthProvider {
     return 'github';
   }
@@ -35,7 +47,8 @@ export class GithubOAuthProvider extends BaseOAuthProvider {
           code: code,
           redirect_uri: this.config.redirectUri,
         }),
-      },
+        agent: this.proxyAgent,
+      } as any,
     );
 
     if (!response.ok) {
@@ -67,7 +80,8 @@ export class GithubOAuthProvider extends BaseOAuthProvider {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/json',
       },
-    });
+      agent: this.proxyAgent,
+    } as any);
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
@@ -104,7 +118,8 @@ export class GithubOAuthProvider extends BaseOAuthProvider {
           Authorization: `Bearer ${accessToken}`,
           Accept: 'application/json',
         },
-      });
+        agent: this.proxyAgent,
+      } as any);
 
       if (response.ok) {
         const emails: any[] = await response.json();
@@ -142,7 +157,8 @@ export class GithubOAuthProvider extends BaseOAuthProvider {
           grant_type: 'refresh_token',
           refresh_token: refreshToken,
         }),
-      },
+        agent: this.proxyAgent,
+      } as any,
     );
 
     if (!response.ok) {
