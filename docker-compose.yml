@@ -84,7 +84,7 @@ services:
 
   # MinIO 对象存储
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: ys-minio
     restart: unless-stopped
     environment:
@@ -106,7 +106,7 @@ services:
 
   # MinIO 初始化服务 - 自动创建存储桶
   minio-setup:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     container_name: ys-minio-setup
     depends_on:
       minio:
