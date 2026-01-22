@@ -3,6 +3,7 @@ import { DrizzleModule } from '@ys/database/nestjs';
 import { UserModule } from '../user/user.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UserRegisteredListener } from './listeners/user-registered.listener';
 
 @Module({
   imports: [UserModule, DrizzleModule],
@@ -12,6 +13,7 @@ import { AuthService } from './auth.service';
       provide: 'LocalAuthService',
       useClass: AuthService,
     },
+    UserRegisteredListener,
   ],
   exports: ['LocalAuthService'],
 })

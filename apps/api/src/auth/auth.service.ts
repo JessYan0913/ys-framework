@@ -1,14 +1,14 @@
 import { AuthService as SharedAuthService, TokenRevocationService, UserPayload } from '@lib/auth';
-import { MailService } from '@lib/mail';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import { user } from '@ys/database';
 import { DrizzleService } from '@ys/database/nestjs';
 import * as bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { UserService } from '../user/user.service';
-import { welcomeTemplate } from './templates/welcome.template';
+import { UserRegisteredEvent } from './events/user-registered.event';
 import { LoginVO } from './vo/login.vo';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class AuthService {
   constructor(
     private readonly userService: UserService,
     private readonly drizzle: DrizzleService,
-    private readonly mailService: MailService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly sharedAuthService: SharedAuthService,
     private readonly jwtService: JwtService,
     private readonly tokenRevocationService: TokenRevocationService,
@@ -41,7 +41,7 @@ export class AuthService {
       const hash = bcrypt.hashSync(password, salt);
 
       // 使用事务创建用户和订阅
-      await this.drizzle.db.transaction(async (tx) => {
+      const newUser = await this.drizzle.db.transaction(async (tx) => {
         // 创建新用户
         const [userRow] = await tx
           .insert(user)
@@ -52,17 +52,14 @@ export class AuthService {
           })
           .returning();
 
-        // 发送欢迎邮件
-        try {
-          await this.mailService.sendTemplate(userRow.email, welcomeTemplate, {
-            name: userRow.name,
-            loginUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/login`,
-          });
-        } catch (error) {
-          console.error('发送欢迎邮件失败:', error);
-          // 不阻塞注册流程，只记录错误
-        }
+        return userRow;
       });
+
+      // 发送注册事件（异步，不阻塞）
+      this.eventEmitter.emitAsync(
+        'user.registered',
+        new UserRegisteredEvent(newUser.id, newUser.email, newUser.name),
+      );
 
       return {
         message: '注册成功',

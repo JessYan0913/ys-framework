@@ -9,6 +9,7 @@ import { StorageModule } from '@lib/storage';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DrizzleModule } from '@ys/database/nestjs';
 import { LoggerModule } from 'nestjs-pino';
 import { join } from 'path';
@@ -25,6 +26,7 @@ import { UserService } from './user/user.service';
       isGlobal: true,
       envFilePath: [join(process.cwd(), '..', '..', '.env'), '.env'],
     }),
+    EventEmitterModule.forRoot(),
     LoggerModule.forRootAsync({
       useFactory: () => {
         const isProduction = process.env.NODE_ENV === 'production';
