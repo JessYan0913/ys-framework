@@ -28,4 +28,5 @@ export interface UserService<T extends UserPayload = UserPayload> {
 
   findOrCreateByOAuth(profile: OAuthUserProfile): T | Promise<T>;
   findOrCreateByPhone(phone: string): T | Promise<T>;
+  findById(id: string): T | Promise<T | null>;
 }

@@ -20,7 +20,7 @@ export default auth(async (request: NextRequest) => {
   const pathname = request.nextUrl.pathname;
 
   // API 路由跳过国际化处理
-  if (pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/') || pathname.startsWith('/.well-known/')) {
     return;
   }
 
@@ -41,5 +41,5 @@ export default auth(async (request: NextRequest) => {
 
 export const config = {
   // 排除静态资源、API 路由和系统文件
-  matcher: ['/', '/((?!api|static|.*\\..*|_next|favicon.ico|robots.txt).*)'],
+  matcher: ['/', '/((?!api|nest|static|.*\\..*|_next|favicon.ico|robots.txt).*)'],
 };

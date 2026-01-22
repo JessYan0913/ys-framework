@@ -1,10 +1,10 @@
-import { Inject, Injectable, Optional } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Request } from 'express';
 import { Strategy } from 'passport-local';
-import { UserService } from '../interfaces/user.interface';
-import { OAuthStateStore } from '../oauth/oauth-state-store';
+import { Request } from 'express';
 import { OAuthService } from '../oauth/oauth.service';
+import { UserService, OAuthUserProfile } from '../interfaces/user.interface';
+import { OAuthStateStore } from '../oauth/oauth-state-store';
 
 @Injectable()
 export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
@@ -36,13 +36,13 @@ export class OAuthStrategy extends PassportStrategy(Strategy, 'oauth') {
     try {
       // 交换访问令牌
       const tokenResponse = await this.oauthService.exchangeCodeForToken(provider as any, code);
-
+      
       // 获取用户信息
       const userProfile = await this.oauthService.getUserInfo(provider as any, tokenResponse.access_token);
-
+      
       // 查找或创建用户
       const user = await this.userService.findOrCreateByOAuth(userProfile);
-
+      
       return {
         ...user,
         oauthProfile: userProfile,

@@ -91,8 +91,14 @@ export const authConfig = {
       const isApiRoute = pathname.startsWith('/api');
       const isPdfRender = /^\/(en|fr|zh)\/pdf-render\//.test(pathname) || pathname.startsWith('/pdf-render/');
       const isAppRoute = /^\/(en|fr|zh)?\/app\//.test(pathname) || pathname.startsWith('/app/');
+      const isOidcProxyRoute = pathname === '/api/oidc-proxy';
 
-      // 1. API 路由认证 - 未登录返回 401
+      // 1. OIDC 代理路由 - 允许公开访问（内部会处理登录重定向）
+      if (isOidcProxyRoute) {
+        return true;
+      }
+
+      // 2. API 路由认证 - 未登录返回 401
       if (isApiRoute) {
         if (!isLoggedIn) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), {
