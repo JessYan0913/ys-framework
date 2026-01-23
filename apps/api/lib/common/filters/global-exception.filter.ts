@@ -6,9 +6,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
 
   catch(exception: unknown, host: ArgumentsHost) {
+    // Check if the request is a WebSocket handshake or connection
+    // If it is, let the WebSocket layer handle it or ignore it
+    // NestJS Global Exception Filter catches EVERYTHING, including 404s for routes that might be WS
+    
+    // However, host.switchToHttp() works for HTTP requests.
+    // When Socket.IO client connects, it starts with an HTTP GET /socket.io/ request.
+    // If this request fails (e.g. 404 because NestJS didn't route it to Gateway), we end up here.
+    
+    // The error in logs is "NotFoundException: Cannot GET /socket.io/...".
+    // This confirms that the request reached the HTTP router, found no match, threw 404, and was caught here.
+    // This implies that the Gateway is NOT handling this request.
+    
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
+
+    // Safety check: if response object is missing (e.g. non-http context), return
+    if (!response || typeof response.status !== 'function') {
+        return;
+    }
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';

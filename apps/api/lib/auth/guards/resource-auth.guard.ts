@@ -17,7 +17,7 @@ export class ResourceAuthGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      if (this.reflector.get(SKIP_AUTH_KEY, context.getHandler())) {
+      if (this.reflector.getAllAndOverride(SKIP_AUTH_KEY, [context.getHandler(), context.getClass()])) {
         return true;
       }
       throw new UnauthorizedException();

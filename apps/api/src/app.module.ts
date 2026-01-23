@@ -16,6 +16,7 @@ import { join } from 'path';
 import { AuthModule as LocalAuthModule } from './auth/auth.module';
 import { CaptchaModule } from './captcha/captcha.module';
 import { FileModule } from './file/file.module';
+import { NotificationModule } from './notification/notification.module';
 import { OidcModule } from './oidc/oidc.module';
 import { UserModule } from './user/user.module';
 import { UserService } from './user/user.service';
@@ -156,6 +157,7 @@ import { UserService } from './user/user.service';
     OidcModule,
     CaptchaModule,
     LocalAuthModule,
+    NotificationModule,
     StorageModule.forRoot(),
     FileModule.forRoot({
       enableQueue: process.env.ENABLE_FILE_QUEUE === 'true',

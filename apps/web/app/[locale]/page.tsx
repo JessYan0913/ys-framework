@@ -16,6 +16,7 @@ export default async function HomePage() {
         <h1 className="text-3xl font-bold">欢迎回来</h1>
         <p className="text-muted-foreground">您已成功登录</p>
         <div className="pt-4">
+          <p className="text-sm text-muted-foreground">用户ID: {session.user.id}</p>
           <p className="text-sm text-muted-foreground">当前用户: {session.user.email}</p>
           <div className="mt-6 space-y-4">
             <Link
