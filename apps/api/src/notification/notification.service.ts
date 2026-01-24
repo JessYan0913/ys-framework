@@ -66,4 +66,12 @@ export class NotificationService {
       .where(and(eq(notification.userId, userId), eq(notification.isRead, false)));
     return result.count;
   }
+
+  async delete(id: string): Promise<boolean> {
+    const result = await this.drizzle.db
+      .delete(notification)
+      .where(eq(notification.id, id))
+      .returning();
+    return result.length > 0;
+  }
 }

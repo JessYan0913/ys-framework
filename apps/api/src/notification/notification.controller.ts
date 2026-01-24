@@ -1,9 +1,7 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import { SkipAuth } from '@lib/auth';
+import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { CreateNotificationDto } from '@lib/in-app-notification';
 
-@SkipAuth() // Make all notification endpoints public for testing
 @Controller('notifications')
 export class NotificationController {
   constructor(private readonly notificationService: NotificationService) {}
@@ -40,5 +38,10 @@ export class NotificationController {
   @Post('user/:userId/read-all')
   async markAllAsRead(@Param('userId') userId: string) {
     return this.notificationService.markAllAsRead(userId);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.notificationService.delete(id);
   }
 }
